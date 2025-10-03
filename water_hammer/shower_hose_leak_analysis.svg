@@ -1,0 +1,282 @@
+<svg viewBox="0 0 1200 1800" xmlns="http://www.w3.org/2000/svg">
+  <!-- 標題 -->
+  <text x="600" y="40" font-size="28" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
+    蓮蓬頭軟管漏水與水錘效應關係分析
+  </text>
+  
+  <!-- 場景1: 正常狀態 -->
+  <g id="normal-shower">
+    <rect x="50" y="80" width="530" height="400" fill="#e8f5e9" stroke="#333" stroke-width="2" rx="10"/>
+    <text x="315" y="110" font-size="18" font-weight="bold" text-anchor="middle" fill="#2e7d32">
+      正常狀態 (無漏水)
+    </text>
+    
+    <!-- 牆壁 -->
+    <rect x="100" y="140" width="20" height="300" fill="#999" stroke="#333" stroke-width="2"/>
+    
+    <!-- 混合閥 -->
+    <circle cx="110" cy="200" r="25" fill="#4a90e2" stroke="#333" stroke-width="2"/>
+    <text x="160" y="205" font-size="12" fill="#333">混合閥</text>
+    
+    <!-- 軟管 (健康) -->
+    <path d="M 120 200 Q 200 220 250 280 Q 280 320 270 380" 
+          fill="none" stroke="#666" stroke-width="12" stroke-linecap="round"/>
+    <ellipse cx="180" cy="230" rx="8" ry="15" fill="#888" opacity="0.3"/>
+    <ellipse cx="240" cy="290" rx="8" ry="15" fill="#888" opacity="0.3"/>
+    
+    <!-- 蓮蓬頭 -->
+    <ellipse cx="270" cy="400" rx="40" ry="15" fill="#4a90e2" stroke="#333" stroke-width="2"/>
+    <rect x="230" y="385" width="80" height="15" fill="#4a90e2" stroke="#333" stroke-width="2"/>
+    
+    <!-- 正常出水 -->
+    <g opacity="0.6">
+      <line x1="245" y1="415" x2="245" y2="450" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="255" y1="415" x2="255" y2="455" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="265" y1="415" x2="265" y2="450" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="275" y1="415" x2="275" y2="455" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="285" y1="415" x2="285" y2="450" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="295" y1="415" x2="295" y2="455" stroke="#4a90e2" stroke-width="2"/>
+    </g>
+    
+    <!-- 說明 -->
+    <text x="420" y="180" font-size="14" fill="#333">✓ 密封完整</text>
+    <text x="420" y="210" font-size="14" fill="#333">✓ 水流順暢</text>
+    <text x="420" y="240" font-size="14" fill="#333">✓ 壓力穩定</text>
+    <text x="420" y="280" font-size="13" fill="#2e7d32" font-weight="bold">關閉水龍頭時:</text>
+    <text x="420" y="305" font-size="12" fill="#666">壓力正常上升</text>
+    <text x="420" y="325" font-size="12" fill="#666">無異常振動</text>
+  </g>
+  
+  <!-- 場景2: 漏水狀態 -->
+  <g id="leaking-shower">
+    <rect x="620" y="80" width="530" height="400" fill="#ffebee" stroke="#333" stroke-width="2" rx="10"/>
+    <text x="885" y="110" font-size="18" font-weight="bold" text-anchor="middle" fill="#c62828">
+      漏水狀態
+    </text>
+    
+    <!-- 牆壁 -->
+    <rect x="670" y="140" width="20" height="300" fill="#999" stroke="#333" stroke-width="2"/>
+    
+    <!-- 混合閥 -->
+    <circle cx="680" cy="200" r="25" fill="#4a90e2" stroke="#333" stroke-width="2"/>
+    <text x="730" y="205" font-size="12" fill="#333">混合閥</text>
+    
+    <!-- 軟管 (有裂縫) -->
+    <path d="M 690 200 Q 770 220 820 280 Q 850 320 840 380" 
+          fill="none" stroke="#666" stroke-width="12" stroke-linecap="round"/>
+    
+    <!-- 漏水點1 -->
+    <circle cx="750" cy="230" r="8" fill="#ff0000"/>
+    <g opacity="0.7">
+      <line x1="750" y1="235" x2="745" y2="255" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="755" y1="235" x2="760" y2="255" stroke="#4a90e2" stroke-width="2"/>
+      <circle cx="745" cy="260" r="3" fill="#4a90e2"/>
+      <circle cx="760" cy="260" r="3" fill="#4a90e2"/>
+    </g>
+    <text x="780" y="245" font-size="11" fill="#c62828">漏水</text>
+    
+    <!-- 漏水點2 -->
+    <circle cx="820" cy="290" r="8" fill="#ff0000"/>
+    <g opacity="0.7">
+      <line x1="820" y1="295" x2="815" y2="315" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="825" y1="295" x2="830" y2="315" stroke="#4a90e2" stroke-width="2"/>
+      <circle cx="815" cy="320" r="3" fill="#4a90e2"/>
+      <circle cx="830" cy="320" r="3" fill="#4a90e2"/>
+    </g>
+    
+    <!-- 蓮蓬頭接頭鬆脫 -->
+    <ellipse cx="840" cy="400" rx="40" ry="15" fill="#4a90e2" stroke="#c62828" stroke-width="3" stroke-dasharray="5,5"/>
+    <rect x="800" y="385" width="80" height="15" fill="#4a90e2" stroke="#c62828" stroke-width="3" stroke-dasharray="5,5"/>
+    <text x="770" y="380" font-size="11" fill="#c62828">鬆脫</text>
+    
+    <!-- 漏水 -->
+    <g opacity="0.7">
+      <line x1="810" y1="395" x2="805" y2="410" stroke="#4a90e2" stroke-width="2"/>
+      <line x1="870" y1="395" x2="875" y2="410" stroke="#4a90e2" stroke-width="2"/>
+      <circle cx="805" cy="415" r="3" fill="#4a90e2"/>
+      <circle cx="875" cy="415" r="3" fill="#4a90e2"/>
+    </g>
+    
+    <!-- 出水較弱 -->
+    <g opacity="0.5">
+      <line x1="815" y1="415" x2="815" y2="440" stroke="#4a90e2" stroke-width="1.5"/>
+      <line x1="825" y1="415" x2="825" y2="435" stroke="#4a90e2" stroke-width="1.5"/>
+      <line x1="835" y1="415" x2="835" y2="440" stroke="#4a90e2" stroke-width="1.5"/>
+      <line x1="845" y1="415" x2="845" y2="435" stroke="#4a90e2" stroke-width="1.5"/>
+      <line x1="855" y1="415" x2="855" y2="440" stroke="#4a90e2" stroke-width="1.5"/>
+      <line x1="865" y1="415" x2="865" y2="435" stroke="#4a90e2" stroke-width="1.5"/>
+    </g>
+    
+    <!-- 說明 -->
+    <text x="990" y="180" font-size="14" fill="#c62828">✗ 多處漏水</text>
+    <text x="990" y="210" font-size="14" fill="#c62828">✗ 接頭鬆脫</text>
+    <text x="990" y="240" font-size="14" fill="#c62828">✗ 壓力不穩</text>
+  </g>
+  
+  <!-- 分析圖：為什麼漏水會引發水錘 -->
+  <g id="analysis">
+    <rect x="50" y="520" width="1100" height="620" fill="#fff9e6" stroke="#333" stroke-width="2" rx="10"/>
+    <text x="600" y="555" font-size="22" font-weight="bold" text-anchor="middle" fill="#f57c00">
+      漏水/鬆脫如何引發水錘效應？
+    </text>
+    
+    <!-- 機制1 -->
+    <g transform="translate(80, 590)">
+      <rect x="0" y="0" width="340" height="230" fill="white" stroke="#f57c00" stroke-width="2" rx="5"/>
+      <text x="170" y="30" font-size="16" font-weight="bold" text-anchor="middle" fill="#e65100">
+        機制1: 氣體進入管道
+      </text>
+      
+      <!-- 示意圖 -->
+      <rect x="60" y="50" width="220" height="40" fill="#e8e8e8" stroke="#333" stroke-width="2"/>
+      <rect x="60" y="70" width="100" height="20" fill="#4a90e2" opacity="0.6"/>
+      <circle cx="165" cy="80" r="8" fill="#ffeb3b" stroke="#333" stroke-width="1"/>
+      <circle cx="185" cy="75" r="6" fill="#ffeb3b" stroke="#333" stroke-width="1"/>
+      <circle cx="200" cy="82" r="7" fill="#ffeb3b" stroke="#333" stroke-width="1"/>
+      <text x="220" cy="82" font-size="10" fill="#666">氣泡</text>
+      <rect x="215" y="70" width="65" height="20" fill="#4a90e2" opacity="0.6"/>
+      
+      <!-- 裂縫 -->
+      <path d="M 160 50 L 160 90" stroke="#ff0000" stroke-width="2"/>
+      <path d="M 155 60 L 165 60" stroke="#ff0000" stroke-width="2"/>
+      <text x="170" y="45" font-size="10" fill="#c62828">漏水點</text>
+      
+      <text x="170" y="120" font-size="13" text-anchor="middle" fill="#333">漏水處吸入空氣</text>
+      <text x="170" y="145" font-size="12" text-anchor="middle" fill="#666">→ 水柱不連續</text>
+      <text x="170" y="165" font-size="12" text-anchor="middle" fill="#666">→ 氣泡可壓縮</text>
+      <text x="170" y="185" font-size="12" text-anchor="middle" fill="#e65100" font-weight="bold">
+        → 關閉時氣體快速壓縮
+      </text>
+      <text x="170" y="205" font-size="12" text-anchor="middle" fill="#e65100" font-weight="bold">
+        → 產生衝擊波
+      </text>
+    </g>
+    
+    <!-- 機制2 -->
+    <g transform="translate(450, 590)">
+      <rect x="0" y="0" width="340" height="230" fill="white" stroke="#f57c00" stroke-width="2" rx="5"/>
+      <text x="170" y="30" font-size="16" font-weight="bold" text-anchor="middle" fill="#e65100">
+        機制2: 不穩定流動
+      </text>
+      
+      <!-- 波動示意圖 -->
+      <path d="M 60 80 L 100 80 Q 120 60 140 80 Q 160 100 180 80 Q 200 60 220 80 L 280 80" 
+            fill="none" stroke="#ff6b35" stroke-width="3"/>
+      <text x="170" y="60" font-size="11" fill="#ff6b35">壓力波動</text>
+      
+      <!-- 流速箭頭 -->
+      <defs>
+        <marker id="arroworange" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L7,3 z" fill="#ff6b35" />
+        </marker>
+      </defs>
+      <line x1="60" y1="110" x2="110" y2="110" stroke="#ff6b35" stroke-width="3" marker-end="url(#arroworange)"/>
+      <line x1="130" y1="110" x2="160" y2="110" stroke="#ff6b35" stroke-width="2" marker-end="url(#arroworange)"/>
+      <line x1="180" y1="110" x2="220" y2="110" stroke="#ff6b35" stroke-width="3" marker-end="url(#arroworange)"/>
+      <line x1="240" y1="110" x2="265" y2="110" stroke="#ff6b35" stroke-width="2" marker-end="url(#arroworange)"/>
+      <text x="170" y="135" font-size="11" fill="#666">流速不穩定</text>
+      
+      <text x="170" y="160" font-size="12" text-anchor="middle" fill="#666">漏水造成壓力下降</text>
+      <text x="170" y="180" font-size="12" text-anchor="middle" fill="#666">→ 流速時快時慢</text>
+      <text x="170" y="200" font-size="12" text-anchor="middle" fill="#e65100" font-weight="bold">
+        → 突然關閉時速度</text>
+      <text x="170" y="215" font-size="12" text-anchor="middle" fill="#e65100" font-weight="bold">
+        變化更劇烈
+      </text>
+    </g>
+    
+    <!-- 機制3 -->
+    <g transform="translate(820, 590)">
+      <rect x="0" y="0" width="340" height="230" fill="white" stroke="#f57c00" stroke-width="2" rx="5"/>
+      <text x="170" y="30" font-size="16" font-weight="bold" text-anchor="middle" fill="#e65100">
+        機制3: 振動放大
+      </text>
+      
+      <!-- 鬆脫接頭 -->
+      <g transform="translate(70, 50)">
+        <rect x="0" y="0" width="50" height="30" fill="#e8e8e8" stroke="#333" stroke-width="2"/>
+        <rect x="55" y="0" width="50" height="30" fill="#e8e8e8" stroke="#c62828" stroke-width="2" stroke-dasharray="3,3"/>
+        <path d="M 50 15 L 55 15" stroke="#c62828" stroke-width="2"/>
+        <text x="52" y="50" font-size="10" text-anchor="middle" fill="#c62828">間隙</text>
+        
+        <!-- 振動線 -->
+        <path d="M 52 -5 L 48 -15 M 52 -5 L 56 -15" stroke="#ff0000" stroke-width="2"/>
+        <path d="M 52 35 L 48 45 M 52 35 L 56 45" stroke="#ff0000" stroke-width="2"/>
+      </g>
+      
+      <text x="170" y="115" font-size="12" text-anchor="middle" fill="#666">鬆脫的接頭</text>
+      <text x="170" y="135" font-size="12" text-anchor="middle" fill="#666">→ 有微小間隙</text>
+      <text x="170" y="155" font-size="12" text-anchor="middle" fill="#666">→ 可自由振動</text>
+      <text x="170" y="175" font-size="12" text-anchor="middle" fill="#e65100" font-weight="bold">
+        → 壓力波衝擊時
+      </text>
+      <text x="170" y="195" font-size="12" text-anchor="middle" fill="#e65100" font-weight="bold">
+        → 撞擊產生噪音
+      </text>
+      <text x="170" y="215" font-size="12" text-anchor="middle" fill="#e65100" font-weight="bold">
+        → 「砰砰」聲更明顯
+      </text>
+    </g>
+    
+    <!-- 結論框 -->
+    <g transform="translate(80, 860)">
+      <rect x="0" y="0" width="1040" height="250" fill="#ffccbc" stroke="#d84315" stroke-width="3" rx="8"/>
+      <text x="520" y="35" font-size="20" font-weight="bold" text-anchor="middle" fill="#bf360c">
+        結論：漏水/鬆脫 確實會引發或加劇水錘效應！
+      </text>
+      
+      <!-- 三個要點 -->
+      <g transform="translate(40, 60)">
+        <circle cx="0" cy="0" r="25" fill="#ff5722" stroke="#bf360c" stroke-width="2"/>
+        <text x="0" y="8" font-size="20" font-weight="bold" text-anchor="middle" fill="white">1</text>
+        <text x="40" y="5" font-size="15" fill="#333" font-weight="bold">空氣進入</text>
+        <text x="40" y="28" font-size="13" fill="#666">
+          漏水點讓空氣進入管道，氣泡壓縮時產生強烈衝擊
+        </text>
+      </g>
+      
+      <g transform="translate(40, 120)">
+        <circle cx="0" cy="0" r="25" fill="#ff5722" stroke="#bf360c" stroke-width="2"/>
+        <text x="0" y="8" font-size="20" font-weight="bold" text-anchor="middle" fill="white">2</text>
+        <text x="40" y="5" font-size="15" fill="#333" font-weight="bold">流動不穩</text>
+        <text x="40" y="28" font-size="13" fill="#666">
+          壓力損失造成流速波動，關閉時速度變化更劇烈
+        </text>
+      </g>
+      
+      <g transform="translate(40, 180)">
+        <circle cx="0" cy="0" r="25" fill="#ff5722" stroke="#bf360c" stroke-width="2"/>
+        <text x="0" y="8" font-size="20" font-weight="bold" text-anchor="middle" fill="white">3</text>
+        <text x="40" y="5" font-size="15" fill="#333" font-weight="bold">振動放大</text>
+        <text x="40" y="28" font-size="13" fill="#666">
+          鬆脫接頭可自由振動，將壓力波轉換成明顯噪音
+        </text>
+      </g>
+      
+      <!-- 建議 -->
+      <g transform="translate(550, 70)">
+        <rect x="0" y="0" width="450" height="150" fill="#fff3e0" stroke="#e65100" stroke-width="2" rx="5"/>
+        <text x="225" y="30" font-size="16" font-weight="bold" text-anchor="middle" fill="#e65100">
+          💡 建議處理方式
+        </text>
+        <text x="30" y="60" font-size="14" fill="#333">
+          ✓ 更換老舊或破損的軟管
+        </text>
+        <text x="30" y="85" font-size="14" fill="#333">
+          ✓ 重新鎖緊所有接頭（注意不要過緊）
+        </text>
+        <text x="30" y="110" font-size="14" fill="#333">
+          ✓ 檢查墊片是否老化，必要時更換
+        </text>
+        <text x="30" y="135" font-size="14" fill="#333">
+          ✓ 養成緩慢關閉水龍頭的習慣
+        </text>
+      </g>
+    </g>
+  </g>
+  
+  <!-- 底部註解 -->
+  <text x="600" y="1180" font-size="14" text-anchor="middle" fill="#666" font-style="italic">
+    ⚠️ 若問題持續，建議請專業水電師傅檢查整體管路系統
+  </text>
+</svg>
