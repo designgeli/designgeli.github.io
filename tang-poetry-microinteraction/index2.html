@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>唐詩微互動 v2 · 閱讀儀式</title>
+<!--
+  v2 Design Philosophy (tang-poetry-microinteraction.docx):
+  「讓每一種閱讀心情，都擁有專屬的『被接住』的方式。」
+  v1 → micro-interactions as passive scroll rewards
+  v2 → micro-interactions as intentional MARKING RITUALS
+       The interaction happens AT the moment the reader labels their feeling.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   RESET & VARIABLES
+══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --serif: 'Noto Serif TC', 'Songti SC', Georgia, serif;
+  --sans:  'Noto Sans TC', 'PingFang TC', sans-serif;
+  --mono:  'JetBrains Mono', monospace;
+  --mood-color: #3d5a80;
+  --bg-from: #0d1a2e;
+  --bg-to:   #1a2a3d;
+  --ts: 600ms;
+}
+html, body {
+  height: 100%;
+  background: #111;
+  font-family: var(--serif);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* ══════════════════════════════════════════════
+   PHONE FRAME
+══════════════════════════════════════════════ */
+.phone-frame {
+  width: 390px;
+  height: 844px;
+  max-height: 100vh;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  background: #0a0a12;
+  box-shadow: 0 0 80px rgba(0,0,0,.8);
+}
+@media (max-width: 430px) {
+  .phone-frame { width: 100vw; height: 100vh; max-height: 100dvh; }
+}
+
+/* ══════════════════════════════════════════════
+   VIEWS
+══════════════════════════════════════════════ */
+.view {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+.view.active { opacity: 1; pointer-events: all; }
+
+/* ══════════════════════════════════════════════
+   SELECTOR VIEW
+══════════════════════════════════════════════ */
+#view-selector {
+  background: #080810;
+  display: flex;
+  flex-direction: column;
+}
+.selector-header {
+  padding: 52px 20px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.selector-header h1 {
+  font-size: 21px;
+  font-weight: 500;
+  color: #e8e0d4;
+  letter-spacing: .04em;
+  line-height: 1.3;
+}
+.selector-header p {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #5a5468;
+  letter-spacing: .1em;
+  margin-top: 5px;
+}
+.selector-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.selector-grid::-webkit-scrollbar { display: none; }
+.mood-card {
+  border-radius: 12px;
+  padding: 13px 11px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.mood-card:active { transform: scale(.96); }
+.mood-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+  pointer-events: none;
+}
+.card-emoji  { font-size: 20px; margin-bottom: 4px; }
+.card-mood   { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+.card-mood-zh { font-size: 10px; color: rgba(255,255,255,.68); font-family: var(--sans); margin-top: 1px; }
+.card-micro-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.35);
+  margin-top: 2px;
+}
+.card-title  { font-size: 17px; font-weight: 500; color: rgba(255,255,255,.92); letter-spacing: .08em; }
+.card-author { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; font-family: var(--sans); }
+.card-line   { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 5px; line-height: 1.4; }
+
+/* ══════════════════════════════════════════════
+   READER VIEW — 3-ZONE LAYOUT
+══════════════════════════════════════════════ */
+#view-reader {
+  display: grid;
+  grid-template-rows: 30px 1fr 56px;
+  transition: background var(--ts) ease;
+}
+
+/* Zone 1 — Mood Bar */
+.mood-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: rgba(0,0,0,.3);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  position: relative;
+  z-index: 10;
+}
+.mood-bar-left { display: flex; align-items: center; gap: 8px; }
+.mood-strip { width: 8px; height: 14px; border-radius: 2px; background: var(--mood-color); transition: background 600ms; }
+.mood-label { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; color: rgba(255,255,255,.5); text-transform: uppercase; }
+.mood-label-zh { font-family: var(--sans); font-size: 10px; color: rgba(255,255,255,.7); margin-left: 3px; }
+.mood-bar-right { display: flex; align-items: center; gap: 8px; }
+.mood-bar-emoji { font-size: 13px; }
+.back-btn {
+  background: none; border: none;
+  color: rgba(255,255,255,.38); font-size: 18px;
+  cursor: pointer; padding: 0 3px; line-height: 1;
+  transition: color 200ms;
+}
+.back-btn:active { color: rgba(255,255,255,.9); }
+.mark-counter {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(255,255,255,.3);
+  letter-spacing: .06em;
+}
+
+/* Zone 2 — Reading Zone */
+.reading-zone {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  touch-action: none;
+}
+.poem-meta {
+  position: absolute;
+  top: 28px;
+  left: 0; right: 0;
+  text-align: center;
+}
+.poem-meta-title  { font-size: 12px; color: rgba(255,255,255,.38); letter-spacing: .12em; font-family: var(--sans); font-weight: 300; }
+.poem-meta-author { font-size: 11px; color: rgba(255,255,255,.22); font-family: var(--mono); margin-top: 3px; letter-spacing: .08em; }
+.poem-lines { text-align: center; position: relative; z-index: 2; }
+.poem-line {
+  font-size: 26px;
+  font-weight: 400;
+  color: rgba(255,255,255,.88);
+  letter-spacing: .18em;
+  line-height: 2.2;
+  display: block;
+  transition: color 600ms ease, filter 800ms ease;
+  white-space: nowrap;
+}
+
+/* Zone 3 — Interaction Bar */
+.interaction-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 16px;
+  background: rgba(0,0,0,.42);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255,255,255,.06);
+  position: relative;
+  z-index: 10;
+}
+.bar-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: none; cursor: pointer;
+  padding: 6px 14px; border-radius: 8px;
+  transition: background 200ms, transform 200ms;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bar-btn:active { background: rgba(255,255,255,.08); }
+.bar-btn-icon  { font-size: 18px; transition: transform 200ms; }
+.bar-btn-label { font-family: var(--sans); font-size: 9px; color: rgba(255,255,255,.38); letter-spacing: .05em; }
+.bar-divider   { width: 1px; height: 26px; background: rgba(255,255,255,.07); }
+
+/* PRIMARY MARK BUTTON — highlighted */
+.btn-mark .bar-btn-icon  { font-size: 20px; }
+.btn-mark .bar-btn-label { color: rgba(255,255,255,.55); }
+
+/* Toast */
+.toast {
+  position: absolute;
+  bottom: 68px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(20,18,35,.96);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 18px;
+  padding: 7px 18px;
+  font-family: var(--sans); font-size: 12px;
+  color: rgba(255,255,255,.8);
+  opacity: 0; pointer-events: none; white-space: nowrap;
+  transition: opacity 280ms, transform 280ms;
+  z-index: 30;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ══════════════════════════════════════════════
+   MICRO 1: SAD — 雨滴漣漪
+══════════════════════════════════════════════ */
+.rain-drop {
+  position: absolute;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, rgba(140,190,230,.0), rgba(140,190,230,.85));
+  pointer-events: none;
+  z-index: 4;
+  animation: rainFall var(--dur,1.3s) cubic-bezier(.4,.0,.6,1) forwards;
+  animation-delay: var(--delay,0s);
+}
+@keyframes rainFall {
+  0%   { transform: translateY(-20px) scaleY(1); opacity: 0; }
+  8%   { opacity: 0.85; }
+  88%  { opacity: 0.7; transform: translateY(var(--fall,580px)) scaleY(1.15); }
+  100% { opacity: 0; transform: translateY(var(--fall,600px)) scaleY(0.4); }
+}
+.rain-ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(140,190,230,.55);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 4;
+  animation: rainRipple .9s ease-out forwards;
+  animation-delay: var(--delay,0s);
+}
+@keyframes rainRipple {
+  0%   { transform: translate(-50%,-50%) scale(0); opacity: .8; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 0; }
+}
+.rain-wash {
+  position: absolute;
+  inset: 0;
+  background: rgba(80,110,160,.0);
+  pointer-events: none;
+  z-index: 1;
+  transition: background 2s ease;
+}
+.rain-wash.washed { background: rgba(80,110,160,.12); }
+
+/* ══════════════════════════════════════════════
+   MICRO 2: FUNNY — 笑聲彈跳
+══════════════════════════════════════════════ */
+@keyframes bellyBounce {
+  0%   { transform: scale(1,1); }
+  15%  { transform: scale(1.28,.85) translateY(3px); }
+  30%  { transform: scale(.88,1.22) translateY(-6px); }
+  50%  { transform: scale(1.1,.93) translateY(2px); }
+  68%  { transform: scale(.96,1.06) translateY(-1px); }
+  100% { transform: scale(1,1) translateY(0); }
+}
+.haha-bubble {
+  position: absolute;
+  background: rgba(200,162,20,.12);
+  border: 1px solid rgba(200,162,20,.35);
+  border-radius: 10px 10px 10px 2px;
+  padding: 3px 9px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: rgba(255,210,70,.8);
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+  animation: hahaFloat var(--dur,2.2s) ease-out forwards;
+  animation-delay: var(--delay,0s);
+}
+.haha-bubble.right { border-radius: 10px 10px 2px 10px; }
+@keyframes hahaFloat {
+  0%   { opacity: 0; transform: translateY(0) scale(.8) rotate(var(--rot,-4deg)); }
+  12%  { opacity: .9; transform: translateY(-20px) scale(1) rotate(0deg); }
+  80%  { opacity: .7; }
+  100% { opacity: 0; transform: translateY(-160px) scale(.9) rotate(var(--rot2,3deg)); }
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 3: EMOTIONAL — 心弦脈動
+══════════════════════════════════════════════ */
+.ecg-container {
+  position: absolute;
+  right: 6px;
+  top: 8%;
+  width: 22px;
+  height: 84%;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.ecg-container.visible { opacity: 1; }
+.ecg-path {
+  fill: none;
+  stroke: rgba(180,130,220,.75);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 350;
+  stroke-dashoffset: 350;
+  transition: stroke-dashoffset 2s ease-out;
+}
+.ecg-path.drawn { stroke-dashoffset: 0; }
+
+.ecg-expand-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.ecg-expand-overlay.active { opacity: 1; }
+.ecg-expand-overlay svg { width: 100%; height: 100%; }
+.ecg-expand-path {
+  fill: none;
+  stroke: rgba(180,130,220,.25);
+  stroke-width: 1.2;
+  animation: ecgPulse 1.2s ease-in-out infinite;
+}
+@keyframes ecgPulse {
+  0%,100% { stroke-opacity: .25; stroke-width: 1.2; }
+  50%     { stroke-opacity: .55; stroke-width: 1.8; }
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 4: TENSE — 屏息暗角
+══════════════════════════════════════════════ */
+.vignette-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(ellipse 280px 400px at 50% 50%, transparent 40%, rgba(0,0,0,.55) 100%);
+  opacity: .6;
+  transition: opacity .8s ease, background .8s ease;
+}
+.vignette-overlay.hold {
+  opacity: 1;
+  background: radial-gradient(ellipse 180px 260px at 50% 50%, transparent 20%, rgba(0,0,0,.85) 100%);
+  transition: opacity .2s ease, background .2s ease;
+}
+.vignette-overlay.release {
+  opacity: .4;
+  transition: opacity 1.2s ease, background 1.2s ease;
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 5: ADVENTUROUS — 路徑足跡
+══════════════════════════════════════════════ */
+.adventure-path-container {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 130px;
+  pointer-events: none;
+  z-index: 2;
+}
+.adventure-path-container svg { width: 100%; height: 100%; }
+#adventurePath {
+  fill: none;
+  stroke: rgba(200,121,65,.55);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 500;
+  stroke-dashoffset: 500;
+  transition: stroke-dashoffset 2.5s cubic-bezier(.4,.0,.2,1);
+}
+.footprint {
+  position: absolute;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.footprint.show { opacity: .7; }
+.adventure-flag {
+  position: absolute;
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transform: scale(.6);
+  transition: opacity 400ms ease, transform 400ms cubic-bezier(.34,1.56,.64,1);
+}
+.adventure-flag.show { opacity: 1; transform: scale(1); }
+
+/* ══════════════════════════════════════════════
+   MICRO 6: CHALLENGING — 里程碑碎片
+══════════════════════════════════════════════ */
+.badge-container {
+  position: absolute;
+  top: 24px;
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  pointer-events: none;
+  z-index: 3;
+}
+.badge-fragment {
+  position: absolute;
+  opacity: .3;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform .8s cubic-bezier(.34,1.56,.64,1), opacity .8s ease;
+}
+.badge-fragment.assembled { opacity: 1; }
+.badge-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,180,60,.35) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.badge-glow.active { opacity: 1; animation: badgeGlowPulse 1s ease-out forwards; }
+@keyframes badgeGlowPulse {
+  0%   { opacity: 0; transform: scale(.8); }
+  40%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 7: RELAXING — 環境音景
+══════════════════════════════════════════════ */
+.relaxing-flow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 290px 230px at 36% 44%, rgba(45,106,79,.22) 0%, transparent 68%),
+    radial-gradient(ellipse 230px 290px at 67% 62%, rgba(30,80,55,.15) 0%, transparent 65%);
+  animation: relaxFlowPulse 11s ease-in-out infinite;
+  transform-origin: center;
+}
+@keyframes relaxFlowPulse {
+  0%,100% { transform: scale(1) rotate(0deg);    opacity: .75; }
+  33%     { transform: scale(1.07) rotate(1.8deg); opacity: 1;   }
+  66%     { transform: scale(.96) rotate(-1.8deg); opacity: .82; }
+}
+.relaxing-text-shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(180deg,
+    transparent 30%,
+    rgba(45,106,79,.06) 50%,
+    transparent 70%
+  );
+  animation: shimmerSweep 8s ease-in-out infinite;
+}
+@keyframes shimmerSweep {
+  0%,100% { transform: translateY(-20px); opacity: 0; }
+  50%     { transform: translateY(20px); opacity: 1; }
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 8: LIGHTHEARTED — 羽毛飄浮
+══════════════════════════════════════════════ */
+.feather-wrapper {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 4;
+  transition: left 200ms ease-out;
+}
+.feather-wrapper.falling {
+  animation: featherFall var(--fall-dur, 4s) cubic-bezier(.4,.0,.2,1) forwards;
+}
+.feather-wrapper.bouncing {
+  animation: featherBounce .5s ease-out forwards;
+}
+.feather-svg { width: 28px; height: 62px; transform-origin: 50% 10%; }
+.feather-svg.sway { animation: featherSway 2.5s ease-in-out infinite; }
+@keyframes featherSway {
+  0%,100% { transform: rotate(-8deg); }
+  50%     { transform: rotate(8deg); }
+}
+@keyframes featherFall {
+  0%   { transform: translateX(0) translateY(0) rotate(-5deg); opacity: 1; }
+  25%  { transform: translateX(var(--drift1, 20px)) translateY(180px) rotate(12deg); }
+  50%  { transform: translateX(var(--drift2, -10px)) translateY(360px) rotate(-8deg); }
+  80%  { transform: translateX(var(--drift3, 15px)) translateY(560px) rotate(6deg); opacity: .9; }
+  90%  { transform: translateX(var(--drift3, 15px)) translateY(590px) rotate(4deg); opacity: .8; }
+  100% { transform: translateX(var(--drift3, 15px)) translateY(580px) rotate(2deg) scaleY(.8); opacity: .6; }
+}
+@keyframes featherBounce {
+  0%   { transform: translateX(var(--drift3,15px)) translateY(580px) rotate(2deg) scaleY(.8); }
+  40%  { transform: translateX(var(--drift3,15px)) translateY(560px) rotate(5deg) scaleY(1.1); }
+  70%  { transform: translateX(var(--drift3,15px)) translateY(576px) rotate(1deg) scaleY(.9); }
+  100% { transform: translateX(var(--drift3,15px)) translateY(572px) rotate(3deg) scaleY(1); }
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 9: REFLECTIVE — 靜思沙漏
+══════════════════════════════════════════════ */
+.hourglass-container {
+  position: absolute;
+  top: 24px;
+  right: 16px;
+  width: 40px;
+  height: 72px;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.hourglass-container.show { opacity: 1; }
+.hourglass-svg { width: 40px; height: 72px; }
+.sand-grain {
+  animation: sandFall 3s linear infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes sandFall {
+  0%   { transform: translateY(0); opacity: .8; }
+  48%  { transform: translateY(26px); opacity: .6; }
+  50%  { transform: translateY(0px); opacity: 0; }
+  51%  { transform: translateY(34px); opacity: 0; }
+  52%  { transform: translateY(34px); opacity: .5; }
+  100% { transform: translateY(54px); opacity: 0; }
+}
+.note-prompt {
+  position: absolute;
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: rgba(14,12,30,.96);
+  border: 1px solid rgba(130,110,200,.35);
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 15;
+  transition: opacity 400ms ease, transform 400ms ease;
+  white-space: nowrap;
+}
+.note-prompt.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: all;
+}
+.note-prompt p {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: rgba(220,210,250,.8);
+  line-height: 1.6;
+}
+.note-prompt-btns { display: flex; gap: 10px; margin-top: 12px; justify-content: center; }
+.note-prompt-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(130,110,200,.4);
+  background: rgba(130,110,200,.12);
+  color: rgba(200,190,240,.8);
+  font-family: var(--sans);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 200ms;
+}
+.note-prompt-btn:active { background: rgba(130,110,200,.3); }
+
+/* ══════════════════════════════════════════════
+   MICRO 10: INSPIRING — 靈光種子
+══════════════════════════════════════════════ */
+.seed-dot {
+  position: absolute;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,220,80,1) 0%, rgba(255,160,20,.6) 60%, transparent 100%);
+  box-shadow: 0 0 8px rgba(255,200,60,.6), 0 0 20px rgba(255,180,20,.3);
+  cursor: pointer;
+  z-index: 6;
+  animation: seedGlow 1.8s ease-in-out infinite;
+  transition: transform 200ms;
+}
+.seed-dot:active { transform: scale(1.3); }
+@keyframes seedGlow {
+  0%,100% { box-shadow: 0 0 8px rgba(255,200,60,.6), 0 0 20px rgba(255,180,20,.3); transform: scale(1); }
+  50%     { box-shadow: 0 0 14px rgba(255,220,80,.9), 0 0 30px rgba(255,200,40,.5); transform: scale(1.08); }
+}
+.note-zone {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  width: 80px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255,180,40,.35);
+  background: rgba(255,160,20,.06);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.note-zone.show { opacity: 1; }
+.note-zone-label { font-family: var(--sans); font-size: 9px; color: rgba(255,180,40,.5); letter-spacing: .06em; }
+.sprout {
+  position: absolute;
+  font-size: 22px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transform: scale(.4) translateY(10px);
+  transition: opacity 500ms ease, transform 500ms cubic-bezier(.34,1.56,.64,1);
+}
+.sprout.show { opacity: 1; transform: scale(1) translateY(0); }
+
+/* ══════════════════════════════════════════════
+   MICRO 11: INFORMATIVE — 知識節點
+══════════════════════════════════════════════ */
+.info-node-word {
+  position: relative;
+  cursor: pointer;
+  display: inline;
+}
+.info-node-word::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  border-radius: 50%;
+  background: rgba(42,160,180,.4);
+  transform: translate(-50%, -50%);
+  transition: width 300ms ease, height 300ms ease, opacity 300ms;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.info-node-word.node-active::after {
+  width: 44px; height: 44px;
+  opacity: 1;
+}
+.info-node-card {
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px) scale(.95);
+  width: 240px;
+  background: rgba(8,22,34,.97);
+  border: 1px solid rgba(42,140,160,.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 250ms ease, transform 250ms ease;
+}
+.info-node-card.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: all;
+}
+.info-card-title {
+  font-family: var(--sans);
+  font-size: 11px; font-weight: 500;
+  color: rgba(80,200,220,.9);
+  margin-bottom: 7px; letter-spacing: .08em;
+}
+.info-card-body {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: rgba(200,230,240,.75);
+  line-height: 1.7;
+}
+.knowledge-map-hint {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(80,200,220,.45);
+  margin-top: 8px;
+  text-align: center;
+  letter-spacing: .08em;
+}
+/* Connection lines between nodes */
+.node-connector {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 12: MYSTERIOUS — 揭紗效果
+══════════════════════════════════════════════ */
+.scratch-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  cursor: crosshair;
+  touch-action: none;
+}
+.scratch-hint {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--sans);
+  font-size: 11px;
+  color: rgba(180,160,240,.5);
+  letter-spacing: .1em;
+  text-align: center;
+  pointer-events: none;
+  z-index: 7;
+  animation: hintPulse 2s ease-in-out infinite;
+  white-space: nowrap;
+}
+@keyframes hintPulse {
+  0%,100% { opacity: .5; }
+  50%     { opacity: .9; }
+}
+.sand-particle {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: rgba(200,175,130,.75);
+  pointer-events: none;
+  z-index: 8;
+  animation: sandDrift var(--d,.8s) ease-out forwards;
+}
+@keyframes sandDrift {
+  0%   { opacity: .8; transform: translate(0,0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx,8px), var(--dy,14px)) scale(.3); }
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 13: HOPEFUL — 晨光漸亮
+══════════════════════════════════════════════ */
+.hopeful-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(ellipse 120px 80px at 50% 0%, rgba(255,160,60,.0) 0%, transparent 100%);
+  transition: background 1.8s ease;
+}
+.hopeful-light.glow-1 {
+  background: radial-gradient(ellipse 200px 140px at 50% 0%, rgba(255,120,30,.18) 0%, rgba(180,80,20,.06) 60%, transparent 100%);
+}
+.hopeful-light.glow-2 {
+  background: radial-gradient(ellipse 300px 220px at 50% 0%, rgba(255,160,50,.28) 0%, rgba(220,110,30,.1) 55%, transparent 100%);
+}
+.hopeful-light.glow-3 {
+  background: radial-gradient(ellipse 380px 320px at 50% -10%, rgba(255,200,80,.38) 0%, rgba(240,140,40,.15) 50%, transparent 100%);
+}
+.hopeful-burst {
+  position: absolute;
+  inset: -30px;
+  background: radial-gradient(circle at 50% 0%, rgba(255,220,120,.6) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.hopeful-burst.burst { animation: lightBurst 1.2s ease-out forwards; }
+@keyframes lightBurst {
+  0%   { opacity: 0; transform: scale(.8); }
+  20%  { opacity: .9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+.hopeful-text-warm {
+  transition: color 2s ease;
+}
+
+/* ══════════════════════════════════════════════
+   MICRO 14: DARK — 影隨身動
+══════════════════════════════════════════════ */
+.dark-shadow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.dark-ritual-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  background: radial-gradient(circle at var(--rx,50%) var(--ry,50%), rgba(0,0,0,.0) 0%, rgba(0,0,0,.9) 100%);
+  transition: opacity 100ms ease;
+}
+.dark-ritual-flash.intensify { opacity: 1; transition: opacity 200ms ease; }
+.dark-ritual-flash.exhale    { opacity: 0; transition: opacity 1.4s ease-out; }
+
+/* ══════════════════════════════════════════════
+   PAGE TRANSITION
+══════════════════════════════════════════════ */
+.page-enter { animation: pageIn 350ms cubic-bezier(.32,0,.67,0) forwards; }
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes emojiSpring {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.4) rotate(-8deg); }
+  60%  { transform: scale(.9) rotate(5deg); }
+  100% { transform: scale(1); }
+}
+
+/* Hourglass sand — defined here so injectHourglass never writes <style> to <head> */
+@keyframes sandTopShrink {
+  0%   { transform: scaleY(1); }
+  100% { transform: scaleY(0.05); }
+}
+@keyframes sandBotGrow {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div class="phone-frame" id="phoneFrame">
+
+  <!-- ═══════ SELECTOR VIEW ═══════ -->
+  <div id="view-selector" class="view active">
+    <div class="selector-header">
+      <h1>唐詩微互動 v2</h1>
+      <p>READING RITUALS · 14 情感標記儀式</p>
+    </div>
+    <div class="selector-grid" id="selectorGrid"></div>
+  </div>
+
+  <!-- ═══════ READER VIEW ═══════ -->
+  <div id="view-reader" class="view">
+
+    <!-- Zone 1: Mood Bar -->
+    <div class="mood-bar">
+      <div class="mood-bar-left">
+        <button class="back-btn" id="backBtn">‹</button>
+        <div class="mood-strip" id="moodStrip"></div>
+        <span class="mood-label" id="moodLabel"></span>
+        <span class="mood-label-zh" id="moodLabelZh"></span>
+      </div>
+      <div class="mood-bar-right">
+        <span class="mark-counter" id="markCounter"></span>
+        <span class="mood-bar-emoji" id="moodEmoji"></span>
+      </div>
+    </div>
+
+    <!-- Zone 2: Reading Zone -->
+    <div class="reading-zone" id="readingZone">
+      <div class="poem-meta">
+        <div class="poem-meta-title"  id="poemTitle"></div>
+        <div class="poem-meta-author" id="poemAuthor"></div>
+      </div>
+      <!-- Dynamic micro-interaction + poem content injected by JS -->
+    </div>
+
+    <!-- Zone 3: Interaction Bar -->
+    <div class="interaction-bar">
+      <button class="bar-btn btn-mark" id="btnMark">
+        <span class="bar-btn-icon" id="markIcon">🏷️</span>
+        <span class="bar-btn-label" id="markLabel">標記心情</span>
+      </button>
+      <div class="bar-divider"></div>
+      <button class="bar-btn" id="btnInfo">
+        <span class="bar-btn-icon">💬</span>
+        <span class="bar-btn-label">詩意</span>
+      </button>
+      <div class="bar-divider"></div>
+      <button class="bar-btn" id="btnShare">
+        <span class="bar-btn-icon">↗</span>
+        <span class="bar-btn-label">分享</span>
+      </button>
+    </div>
+
+  </div><!-- /view-reader -->
+
+  <div class="toast" id="toast"></div>
+
+</div><!-- /phone-frame -->
+
+<script>
+/* ══════════════════════════════════════════════
+   POEMS DATA
+   micro types map to docx design concepts:
+   rain-ripple / laugh-bubble / ecg-pulse / tense-vignette /
+   path-trail / badge-collect / relax-flow / feather-float /
+   hourglass / seed-plant / info-nodes / scratch-veil /
+   morning-light / shadow-track
+══════════════════════════════════════════════ */
+const POEMS = [
+  {
+    id: 'adventurous', mood: 'adventurous', moodZh: '冒險',
+    title: '出塞', author: '王昌齡',
+    lines: ['秦時明月漢時關','萬里長征人未還','但使龍城飛將在','不教胡馬度陰山'],
+    color: '#c87941', bgFrom: '#1a0e05', bgTo: '#2d1a08',
+    emoji: '⚔️', highlight: '萬里長征人未還',
+    micro: 'path-trail',
+    microLabel: '路徑足跡', microIcon: '👣',
+    plutchik: 'anticipation + anger → aggressiveness',
+    hint: '隨著閱讀延伸的路徑，每一步都是征途。',
+  },
+  {
+    id: 'challenging', mood: 'challenging', moodZh: '挑戰性',
+    title: '登高', author: '杜甫',
+    lines: ['風急天高猿嘯哀','渚清沙白鳥飛回','無邊落木蕭蕭下','不盡長江滾滾來','萬里悲秋常作客','百年多病獨登臺'],
+    color: '#5a7a8c', bgFrom: '#0a1420', bgTo: '#152030',
+    emoji: '🏔️', highlight: '無邊落木蕭蕭下',
+    micro: 'badge-collect',
+    microLabel: '里程徽記', microIcon: '🏅',
+    plutchik: 'fear + sadness → despair',
+    hint: '每一次標記，都是攻克難書的里程碑。',
+    markMax: 3,
+  },
+  {
+    id: 'dark', mood: 'dark', moodZh: '黑暗',
+    title: '春望', author: '杜甫',
+    lines: ['國破山河在','城春草木深','感時花濺淚','恨別鳥驚心','烽火連三月','家書抵萬金'],
+    color: '#8b3252', bgFrom: '#120008', bgTo: '#200510',
+    emoji: '🌑', highlight: '家書抵萬金',
+    micro: 'shadow-track',
+    microLabel: '影隨身動', microIcon: '🌑',
+    plutchik: 'sadness + anger → despair',
+    hint: '用手指在頁面上移動，感受影子跟隨你的重量。',
+  },
+  {
+    id: 'emotional', mood: 'emotional', moodZh: '情感豐富',
+    title: '琵琶行（節選）', author: '白居易',
+    lines: ['潯陽江頭夜送客','楓葉荻花秋瑟瑟','同是天涯淪落人','相逢何必曾相識'],
+    color: '#7b4fa0', bgFrom: '#0e0818', bgTo: '#1a1028',
+    emoji: '🎵', highlight: '同是天涯淪落人',
+    micro: 'ecg-pulse',
+    microLabel: '心弦微顫', microIcon: '💓',
+    plutchik: 'sadness + trust → sentimentality',
+    hint: '長按「標記心情」，讓心弦的波動擴展至全頁。',
+  },
+  {
+    id: 'funny', mood: 'funny', moodZh: '幽默',
+    title: '回鄉偶書', author: '賀知章',
+    lines: ['少小離家老大回','鄉音無改鬢毛衰','兒童相見不相識','笑問客從何處來'],
+    color: '#c8a217', bgFrom: '#181000', bgTo: '#28200a',
+    emoji: '😄', highlight: '笑問客從何處來',
+    micro: 'laugh-bubble',
+    microLabel: '笑聲共鳴', microIcon: '😄',
+    plutchik: 'joy + surprise → delight',
+    hint: '點擊按鈕，聽見笑聲在頁面間漾開。',
+  },
+  {
+    id: 'hopeful', mood: 'hopeful', moodZh: '充滿希望',
+    title: '登鸛雀樓', author: '王之渙',
+    lines: ['白日依山盡','黃河入海流','欲窮千里目','更上一層樓'],
+    color: '#e07b39', bgFrom: '#200a00', bgTo: '#381200',
+    emoji: '🌄', highlight: '更上一層樓',
+    micro: 'morning-light',
+    microLabel: '晨光漸亮', microIcon: '🌅',
+    plutchik: 'anticipation + joy → optimism',
+    hint: '每一次標記，晨光更亮一分。',
+    markMax: 3,
+  },
+  {
+    id: 'informative', mood: 'informative', moodZh: '資訊豐富',
+    title: '送元二使安西', author: '王維',
+    lines: ['渭城朝雨浥輕塵','客舍青青柳色新','勸君更盡一杯酒','西出陽關無故人'],
+    color: '#2a8c7a', bgFrom: '#020f0d', bgTo: '#071815',
+    emoji: '🗺️', highlight: '西出陽關無故人',
+    micro: 'info-nodes',
+    microLabel: '知識節點', microIcon: '🔮',
+    plutchik: 'sadness + trust → sentimentality',
+    hint: '點擊詩中關鍵詞，展開知識地圖。',
+    infoNodes: [
+      { word: '陽關', title: '陽關', body: '漢代關隘，位於今甘肅省敦煌市西南。古絲路西域必經之口，自古為離別的象徵地。', alt: '陽關一出，便是天涯。' },
+      { word: '渭城', title: '渭城', body: '即咸陽，古秦都，位於渭水之北。詩人在此設宴送別，朝雨打濕輕塵，柳色更青。', alt: '渭城細雨，送君遠行。' },
+    ],
+  },
+  {
+    id: 'inspiring', mood: 'inspiring', moodZh: '啟發性',
+    title: '行路難（節選）', author: '李白',
+    lines: ['停杯投箸不能食','拔劍四顧心茫然','長風破浪會有時','直掛雲帆濟滄海'],
+    color: '#d4920a', bgFrom: '#100a00', bgTo: '#201500',
+    emoji: '⭐', highlight: '直掛雲帆濟滄海',
+    micro: 'seed-plant',
+    microLabel: '靈光種子', microIcon: '✨',
+    plutchik: 'anticipation + joy → optimism',
+    hint: '點擊發光的種子，將靈感種入筆記。',
+    seedLine: 2,
+  },
+  {
+    id: 'lighthearted', mood: 'lighthearted', moodZh: '輕鬆愉快',
+    title: '春曉', author: '孟浩然',
+    lines: ['春眠不覺曉','處處聞啼鳥','夜來風雨聲','花落知多少'],
+    color: '#e890a0', bgFrom: '#180810', bgTo: '#281018',
+    emoji: '🪶', highlight: '花落知多少',
+    micro: 'feather-float',
+    microLabel: '羽毛飄浮', microIcon: '🪶',
+    plutchik: 'joy + trust → love',
+    hint: '點擊放開羽毛，隨指尖的氣流漂移。',
+  },
+  {
+    id: 'mysterious', mood: 'mysterious', moodZh: '神秘',
+    title: '錦瑟', author: '李商隱',
+    lines: ['錦瑟無端五十弦','一弦一柱思華年','莊生曉夢迷蝴蝶','望帝春心托杜鵑','滄海月明珠有淚','藍田日暖玉生煙','此情可待成追憶','只是當時已惘然'],
+    color: '#6a50c8', bgFrom: '#06041a', bgTo: '#0e0828',
+    emoji: '🦋', highlight: '此情可待成追憶',
+    micro: 'scratch-veil',
+    microLabel: '揭開薄紗', microIcon: '👆',
+    plutchik: 'sadness + surprise → awe',
+    hint: '用手指擦去薄紗，揭開屬於你的詮釋。',
+  },
+  {
+    id: 'reflective', mood: 'reflective', moodZh: '沉思',
+    title: '楓橋夜泊', author: '張繼',
+    lines: ['月落烏啼霜滿天','江楓漁火對愁眠','姑蘇城外寒山寺','夜半鐘聲到客船'],
+    color: '#2e5c9a', bgFrom: '#030814', bgTo: '#071020',
+    emoji: '⏳', highlight: '夜半鐘聲到客船',
+    micro: 'hourglass',
+    microLabel: '靜思沙漏', microIcon: '⏳',
+    plutchik: 'sadness + anticipation → pessimism',
+    hint: '在此靜候片刻，沙漏流盡時留下你的想法。',
+  },
+  {
+    id: 'relaxing', mood: 'relaxing', moodZh: '放鬆',
+    title: '鳥鳴澗', author: '王維',
+    lines: ['人閒桂花落','夜靜春山空','月出驚山鳥','時鳴春澗中'],
+    color: '#2d7a4f', bgFrom: '#020e08', bgTo: '#071810',
+    emoji: '🌊', highlight: '夜靜春山空',
+    micro: 'relax-flow',
+    microLabel: '環境音景', microIcon: '🌊',
+    plutchik: 'joy + trust → love',
+    hint: '水波流動，白噪音環繞，讓自己沉浸其中。',
+  },
+  {
+    id: 'sad', mood: 'sad', moodZh: '悲傷',
+    title: '靜夜思', author: '李白',
+    lines: ['床前明月光','疑是地上霜','舉頭望明月','低頭思故鄉'],
+    color: '#3d5a80', bgFrom: '#04090f', bgTo: '#0d1a2e',
+    emoji: '🌧️', highlight: '低頭思故鄉',
+    micro: 'rain-ripple',
+    microLabel: '雨滴漣漪', microIcon: '🌧️',
+    plutchik: 'sadness (pure dominant)',
+    hint: '每一次標記，雨滴更密，色調更藍灰。',
+  },
+  {
+    id: 'tense', mood: 'tense', moodZh: '緊張',
+    title: '塞下曲', author: '盧綸',
+    lines: ['月黑雁飛高','單于夜遁逃','欲將輕騎逐','大雪滿弓刀'],
+    color: '#8a5a3c', bgFrom: '#0e0806', bgTo: '#1c1008',
+    emoji: '😮‍💨', highlight: '大雪滿弓刀',
+    micro: 'tense-vignette',
+    microLabel: '屏息瞬間', microIcon: '😮‍💨',
+    plutchik: 'anger + anticipation → aggressiveness',
+    hint: '長按「標記心情」，屏住呼吸；鬆開，緩緩吐氣。',
+  },
+];
+
+/* ══════════════════════════════════════════════
+   APP STATE
+══════════════════════════════════════════════ */
+const state = {
+  currentPoem: null,
+  markCounts: JSON.parse(localStorage.getItem('v2_markCounts') || '{}'),
+  hopefulLevel: 0,
+  badgeCount: 0,
+  hourglassTimer: null,
+  featherDropped: false,
+  scratchRevealDone: false,
+  darkRafId: null,
+};
+
+function saveMarkCount(id) {
+  state.markCounts[id] = (state.markCounts[id] || 0) + 1;
+  localStorage.setItem('v2_markCounts', JSON.stringify(state.markCounts));
+  return state.markCounts[id];
+}
+
+/* ══════════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════════ */
+function showToast(msg, dur = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ══════════════════════════════════════════════
+   BUILD SELECTOR GRID
+══════════════════════════════════════════════ */
+function buildSelector() {
+  const grid = document.getElementById('selectorGrid');
+  POEMS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'mood-card';
+    card.style.background = `linear-gradient(135deg, ${p.color}22 0%, ${p.bgTo} 100%)`;
+    card.style.border = `1px solid ${p.color}44`;
+    card.innerHTML = `
+      <div>
+        <div class="card-emoji">${p.emoji}</div>
+        <div class="card-mood">${p.mood}</div>
+        <div class="card-mood-zh">${p.moodZh}</div>
+        <div class="card-micro-label">${p.microIcon} ${p.microLabel}</div>
+      </div>
+      <div>
+        <div class="card-title">〈${p.title}〉</div>
+        <div class="card-author">${p.author}</div>
+        <div class="card-line">${p.highlight}</div>
+      </div>`;
+    card.addEventListener('click', () => openPoem(p));
+    grid.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════ */
+function openPoem(poem) {
+  state.currentPoem = poem;
+  state.featherDropped = false;
+  state.scratchRevealDone = false;
+  state.hopefulLevel = 0;
+  state.badgeCount = 0;
+
+  // Clear any lingering timers
+  if (state.hourglassTimer) { clearTimeout(state.hourglassTimer); state.hourglassTimer = null; }
+  if (state.darkRafId) { cancelAnimationFrame(state.darkRafId); state.darkRafId = null; }
+
+  // Apply poem color to frame
+  document.querySelector('.phone-frame').style.setProperty('--mood-color', poem.color);
+
+  // Mood bar
+  document.getElementById('moodStrip').style.background = poem.color;
+  document.getElementById('moodLabel').textContent = poem.mood;
+  document.getElementById('moodLabelZh').textContent = poem.moodZh;
+  document.getElementById('moodEmoji').textContent = poem.emoji;
+
+  // Mark button
+  document.getElementById('markIcon').textContent = poem.microIcon;
+  document.getElementById('markLabel').textContent = poem.microLabel;
+
+  // Mark counter
+  const cnt = state.markCounts[poem.id] || 0;
+  updateMarkCounter(cnt);
+
+  // Poem title/author
+  document.getElementById('poemTitle').textContent = `〈${poem.title}〉`;
+  document.getElementById('poemAuthor').textContent = `${poem.author} · 唐`;
+
+  // Background
+  const reader = document.getElementById('view-reader');
+  reader.style.background = `linear-gradient(180deg, ${poem.bgFrom} 0%, ${poem.bgTo} 100%)`;
+
+  // Build reading zone content
+  buildReadingZone(poem);
+
+  // Switch views
+  document.getElementById('view-selector').classList.remove('active');
+  reader.classList.add('active', 'page-enter');
+  setTimeout(() => reader.classList.remove('page-enter'), 350);
+
+  // Init micro-interaction (after brief settle)
+  setTimeout(() => initMicro(poem), 350);
+}
+
+function goBack() {
+  if (state.hourglassTimer) { clearTimeout(state.hourglassTimer); state.hourglassTimer = null; }
+  if (state.darkRafId) { cancelAnimationFrame(state.darkRafId); state.darkRafId = null; }
+
+  // Remove feather pointer tracker (safe to call even if not attached)
+  const zone = document.getElementById('readingZone');
+  if (zone) {
+    zone.removeEventListener('pointermove', featherFollowPointer);
+    // Reset info-node close guard so it re-attaches cleanly on next open
+    zone._infoCloseAttached = false;
+  }
+
+  document.getElementById('view-reader').classList.remove('active');
+  document.getElementById('view-selector').classList.add('active');
+  state.currentPoem = null;
+}
+
+function updateMarkCounter(n) {
+  const el = document.getElementById('markCounter');
+  if (n > 0) el.textContent = `×${n}`;
+  else el.textContent = '';
+}
+
+/* ══════════════════════════════════════════════
+   BUILD READING ZONE
+══════════════════════════════════════════════ */
+function buildReadingZone(poem) {
+  const zone = document.getElementById('readingZone');
+  // Clean up previous
+  zone.querySelectorAll(
+    '.poem-lines, .rain-wash, .ecg-container, .ecg-expand-overlay, ' +
+    '.vignette-overlay, .dark-ritual-flash, .dark-shadow, ' +
+    '.adventure-path-container, .badge-container, .relaxing-flow, .relaxing-text-shimmer, ' +
+    '.feather-wrapper, .hourglass-container, .note-prompt, ' +
+    '.seed-dot, .note-zone, .sprout, .scratch-canvas, .scratch-hint, ' +
+    '.hopeful-light, .hopeful-burst, .rain-drop, .rain-ripple, ' +
+    '.haha-bubble, .footprint, .adventure-flag, .badge-glow, ' +
+    '.sand-particle, .node-connector'
+  ).forEach(el => el.remove());
+
+  // Build poem lines
+  const linesDiv = document.createElement('div');
+  linesDiv.className = 'poem-lines';
+
+  poem.lines.forEach((line, i) => {
+    const span = document.createElement('span');
+    span.className = 'poem-line';
+    span.dataset.index = i;
+
+    if (poem.micro === 'info-nodes') {
+      buildInfoLine(span, line, poem);
+    } else {
+      span.textContent = line;
+    }
+
+    linesDiv.appendChild(span);
+  });
+
+  zone.appendChild(linesDiv);
+
+  // Inject per-interaction elements
+  switch (poem.micro) {
+    case 'rain-ripple':    injectRainWash(zone); break;
+    case 'ecg-pulse':      injectECG(zone, poem); break;
+    case 'tense-vignette': injectVignette(zone); break;
+    case 'shadow-track':   injectDarkShadow(zone); break;
+    case 'path-trail':     injectPathTrail(zone, poem); break;
+    case 'badge-collect':  injectBadge(zone); break;
+    case 'relax-flow':     injectRelaxFlow(zone); break;
+    case 'feather-float':  injectFeather(zone, poem); break;
+    case 'hourglass':      injectHourglass(zone); break;
+    case 'seed-plant':     injectSeed(zone, poem); break;
+    case 'scratch-veil':   injectScratch(zone); break;
+    case 'morning-light':  injectMorningLight(zone); break;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   INJECT HELPERS
+══════════════════════════════════════════════ */
+function injectRainWash(zone) {
+  const wash = document.createElement('div');
+  wash.className = 'rain-wash';
+  wash.id = 'rainWash';
+  zone.insertBefore(wash, zone.firstChild);
+}
+
+function injectECG(zone) {
+  const c = document.createElement('div');
+  c.className = 'ecg-container';
+  c.id = 'ecgContainer';
+  c.innerHTML = `<svg viewBox="0 0 22 300" width="22" height="300" style="overflow:visible">
+    <path class="ecg-path" id="ecgPath"
+      d="M11 10 L11 30 L11 50 L11 55 L5 65 L11 90 L17 100 L11 110 L11 130
+         L11 135 L5 145 L11 170 L17 180 L11 190 L11 210
+         L11 215 L5 225 L11 250 L17 260 L11 270 L11 290"/>
+  </svg>`;
+  zone.appendChild(c);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'ecg-expand-overlay';
+  overlay.id = 'ecgExpand';
+  overlay.innerHTML = `<svg viewBox="0 0 390 758" preserveAspectRatio="none">
+    <path class="ecg-expand-path"
+      d="M0 180 Q50 140 100 180 Q120 200 130 180 L145 100 L160 260 L170 180
+         Q190 140 240 180 Q280 210 300 180 L310 80 L325 290 L335 180
+         Q360 140 390 180"/>
+  </svg>`;
+  zone.appendChild(overlay);
+}
+
+function injectVignette(zone) {
+  const v = document.createElement('div');
+  v.className = 'vignette-overlay';
+  v.id = 'vignetteOverlay';
+  zone.appendChild(v);
+}
+
+function injectDarkShadow(zone) {
+  const shadow = document.createElement('div');
+  shadow.className = 'dark-shadow';
+  shadow.id = 'darkShadow';
+  zone.appendChild(shadow);
+
+  const ritual = document.createElement('div');
+  ritual.className = 'dark-ritual-flash';
+  ritual.id = 'darkRitual';
+  zone.appendChild(ritual);
+}
+
+function injectPathTrail(zone) {
+  const c = document.createElement('div');
+  c.className = 'adventure-path-container';
+  c.id = 'pathContainer';
+  c.innerHTML = `<svg viewBox="0 0 390 130" preserveAspectRatio="none">
+    <path id="adventurePath"
+      d="M-10 90 Q60 50 120 78 Q180 105 240 60 Q300 20 370 65"/>
+  </svg>`;
+  zone.appendChild(c);
+}
+
+function injectBadge(zone) {
+  const bc = document.createElement('div');
+  bc.className = 'badge-container';
+  bc.id = 'badgeContainer';
+  bc.innerHTML = `
+    <div class="badge-glow" id="badgeGlow"></div>
+    <svg id="badgeSvg" viewBox="0 0 52 52" width="52" height="52">
+      <!-- Fragment 1: top triangle -->
+      <polygon class="badge-fragment" id="frag1"
+        points="26,4 38,24 14,24" fill="rgba(90,122,140,.6)"
+        style="transform: translate(-18px, -14px) rotate(-30deg)"/>
+      <!-- Fragment 2: bottom-left -->
+      <polygon class="badge-fragment" id="frag2"
+        points="14,24 26,44 2,44" fill="rgba(90,122,140,.5)"
+        style="transform: translate(16px, 12px) rotate(20deg)"/>
+      <!-- Fragment 3: bottom-right -->
+      <polygon class="badge-fragment" id="frag3"
+        points="38,24 50,44 26,44" fill="rgba(90,122,140,.5)"
+        style="transform: translate(-14px, 10px) rotate(-15deg)"/>
+    </svg>`;
+  zone.appendChild(bc);
+}
+
+function injectRelaxFlow(zone) {
+  const flow = document.createElement('div');
+  flow.className = 'relaxing-flow';
+  zone.insertBefore(flow, zone.firstChild);
+  const shimmer = document.createElement('div');
+  shimmer.className = 'relaxing-text-shimmer';
+  zone.insertBefore(shimmer, zone.firstChild);
+}
+
+function injectFeather(zone) {
+  const fw = document.createElement('div');
+  fw.className = 'feather-wrapper';
+  fw.id = 'featherWrapper';
+  fw.innerHTML = `
+    <svg class="feather-svg sway" id="featherSvg" viewBox="0 0 28 62">
+      <defs>
+        <linearGradient id="featherGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="rgba(255,240,200,.9)"/>
+          <stop offset="100%" stop-color="rgba(240,200,140,.7)"/>
+        </linearGradient>
+      </defs>
+      <path d="M14 2 C21 8 24 20 22 32 C20 44 16 56 14 60 C12 56 8 44 6 32 C4 20 7 8 14 2 Z"
+            fill="url(#featherGrad)" id="featherBody"/>
+      <line x1="14" y1="4" x2="14" y2="58" stroke="rgba(190,140,70,.55)" stroke-width=".8"/>
+      <line x1="14" y1="14" x2="8"  y2="24" stroke="rgba(190,140,70,.35)" stroke-width=".6"/>
+      <line x1="14" y1="22" x2="7"  y2="34" stroke="rgba(190,140,70,.35)" stroke-width=".6"/>
+      <line x1="14" y1="30" x2="8"  y2="41" stroke="rgba(190,140,70,.35)" stroke-width=".6"/>
+      <line x1="14" y1="38" x2="9"  y2="48" stroke="rgba(190,140,70,.30)" stroke-width=".6"/>
+      <line x1="14" y1="14" x2="20" y2="24" stroke="rgba(190,140,70,.35)" stroke-width=".6"/>
+      <line x1="14" y1="22" x2="21" y2="34" stroke="rgba(190,140,70,.35)" stroke-width=".6"/>
+      <line x1="14" y1="30" x2="20" y2="41" stroke="rgba(190,140,70,.35)" stroke-width=".6"/>
+      <line x1="14" y1="38" x2="19" y2="48" stroke="rgba(190,140,70,.30)" stroke-width=".6"/>
+    </svg>`;
+  zone.appendChild(fw);
+}
+
+function injectHourglass(zone) {
+  const hc = document.createElement('div');
+  hc.className = 'hourglass-container';
+  hc.id = 'hourglassContainer';
+  hc.innerHTML = `
+    <svg class="hourglass-svg" viewBox="0 0 40 72">
+      <!-- Frame -->
+      <path d="M4 4 L36 4 L20 36 L36 68 L4 68 L20 36 Z"
+            fill="none" stroke="rgba(160,140,220,.5)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Top sand fill -->
+      <polygon id="sandTopFill" points="6 6 34 6 20 34" fill="rgba(190,155,70,.35)"
+        style="transform-origin:20px 20px; animation: sandTopShrink 3s linear infinite;"/>
+      <!-- Bottom sand fill -->
+      <polygon id="sandBotFill" points="20 38 6 66 34 66" fill="rgba(190,155,70,.35)"
+        style="transform-origin:20px 52px; animation: sandBotGrow 3s linear infinite; opacity:0;"/>
+      <!-- Falling grains -->
+      <circle class="sand-grain" cx="20" cy="16" r="1.8" fill="rgba(220,185,90,.85)" style="--d:0s"/>
+      <circle class="sand-grain" cx="20" cy="16" r="1.4" fill="rgba(220,185,90,.70)" style="--d:1s"/>
+      <circle class="sand-grain" cx="20" cy="16" r="1.6" fill="rgba(220,185,90,.80)" style="--d:2s"/>
+    </svg>`;
+  zone.appendChild(hc);
+
+  // Note prompt
+  const np = document.createElement('div');
+  np.className = 'note-prompt';
+  np.id = 'notePrompt';
+  np.innerHTML = `
+    <p>沙漏流盡，此刻有何想法？</p>
+    <div class="note-prompt-btns">
+      <button class="note-prompt-btn" id="noteYes">📝 記錄</button>
+      <button class="note-prompt-btn" id="noteDismiss">之後再說</button>
+    </div>`;
+  zone.appendChild(np);
+}
+
+function injectSeed(zone, poem) {
+  const seed = document.createElement('div');
+  seed.className = 'seed-dot';
+  seed.id = 'seedDot';
+  // Provisional position; repositioned in initSeed() once view is visible
+  seed.dataset.seedLine = poem.seedLine ?? 2;
+  seed.style.top = '50%';
+  seed.style.right = '18px';
+  zone.appendChild(seed);
+
+  const noteZone = document.createElement('div');
+  noteZone.className = 'note-zone';
+  noteZone.id = 'noteZone';
+  noteZone.innerHTML = `<span style="font-size:16px">📒</span><span class="note-zone-label">靈感筆記</span>`;
+  zone.appendChild(noteZone);
+
+  const sprout = document.createElement('div');
+  sprout.className = 'sprout';
+  sprout.id = 'sprout';
+  sprout.textContent = '🌱';
+  sprout.style.bottom = '22px';
+  sprout.style.left = '38px';
+  zone.appendChild(sprout);
+}
+
+function injectScratch(zone) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'scratch-canvas';
+  canvas.id = 'scratchCanvas';
+  zone.appendChild(canvas);
+
+  const hint = document.createElement('div');
+  hint.className = 'scratch-hint';
+  hint.id = 'scratchHint';
+  hint.innerHTML = '用手指揭開薄紗 · SCRATCH TO REVEAL';
+  zone.appendChild(hint);
+}
+
+function injectMorningLight(zone) {
+  const light = document.createElement('div');
+  light.className = 'hopeful-light';
+  light.id = 'hopefulLight';
+  zone.insertBefore(light, zone.firstChild);
+
+  const burst = document.createElement('div');
+  burst.className = 'hopeful-burst';
+  burst.id = 'hopefulBurst';
+  zone.insertBefore(burst, zone.firstChild);
+}
+
+/* ══════════════════════════════════════════════
+   INFO-NODES LINE BUILDER
+══════════════════════════════════════════════ */
+function buildInfoLine(span, line, poem) {
+  let html = line;
+  if (poem.infoNodes) {
+    poem.infoNodes.forEach((node, ni) => {
+      if (line.includes(node.word)) {
+        html = html.replace(node.word,
+          `<span class="info-node-word" data-node="${ni}">${node.word}</span>`);
+      }
+    });
+  }
+  span.innerHTML = html;
+
+  span.querySelectorAll('.info-node-word').forEach(el => {
+    const ni = parseInt(el.dataset.node);
+    const node = poem.infoNodes[ni];
+    let card = null;
+
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      el.classList.toggle('node-active');
+      if (!card) {
+        card = document.createElement('div');
+        card.className = 'info-node-card';
+        card.innerHTML = `<div class="info-card-title">${node.title}</div>
+          <div class="info-card-body">${node.body}</div>
+          <div class="knowledge-map-hint">${node.alt}</div>`;
+        card.addEventListener('click', e => e.stopPropagation());
+        el.style.position = 'relative';
+        el.appendChild(card);
+        setTimeout(() => card.classList.add('show'), 20);
+      } else {
+        if (card.classList.contains('show')) {
+          card.classList.remove('show');
+          el.classList.remove('node-active');
+          setTimeout(() => { card.remove(); card = null; }, 260);
+        } else {
+          card.classList.add('show');
+        }
+      }
+    });
+  });
+
+  // Attach zone "close-all" listener only once (guarded by flag on the element)
+  const zone = document.getElementById('readingZone');
+  if (zone && !zone._infoCloseAttached) {
+    zone._infoCloseAttached = true;
+    zone.addEventListener('click', () => {
+      zone.querySelectorAll('.info-node-word.node-active').forEach(el => el.classList.remove('node-active'));
+      zone.querySelectorAll('.info-node-card.show').forEach(c => {
+        c.classList.remove('show');
+        setTimeout(() => c.remove(), 260);
+      });
+    });
+  }
+}
+
+/* ══════════════════════════════════════════════
+   MICRO-INTERACTION DISPATCHER
+══════════════════════════════════════════════ */
+function initMicro(poem) {
+  switch (poem.micro) {
+    case 'tense-vignette': initTenseVignette(poem); break;
+    case 'shadow-track':   initDarkShadow(poem);    break;
+    case 'path-trail':     initPathTrail(poem);     break;
+    case 'badge-collect':  initBadge(poem);         break;
+    case 'relax-flow':     /* CSS handles it */      break;
+    case 'feather-float':  initFeather(poem);       break;
+    case 'hourglass':      initHourglass(poem);     break;
+    case 'seed-plant':     initSeed(poem);          break;
+    case 'scratch-veil':   initScratch(poem);       break;
+    case 'morning-light':  /* button-triggered */    break;
+    case 'ecg-pulse':      initECG(poem);           break;
+    case 'info-nodes':     /* tap-triggered */       break;
+    case 'rain-ripple':    /* button-triggered */    break;
+    case 'laugh-bubble':   /* button-triggered */    break;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   INTERACTIONS — per design spec
+═══════════════════════════════════════════ */
+
+/* ── 1. SAD: 雨滴漣漪 ── button-triggered ── */
+function fireRainRipple(poem) {
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+  const zone = document.getElementById('readingZone');
+  const wash = document.getElementById('rainWash');
+  const drops = Math.min(4 + count * 2, 22); // accumulative
+
+  for (let i = 0; i < drops; i++) {
+    const x = 30 + Math.random() * 310;
+    const dur = 1.1 + Math.random() * 0.5;
+    const delay = Math.random() * 0.8;
+    const fallDist = 380 + Math.random() * 200;
+    const h = 10 + Math.random() * 18;
+
+    const drop = document.createElement('div');
+    drop.className = 'rain-drop';
+    drop.style.left = x + 'px';
+    drop.style.top = '0';
+    drop.style.height = h + 'px';
+    drop.style.setProperty('--dur', dur + 's');
+    drop.style.setProperty('--delay', delay + 's');
+    drop.style.setProperty('--fall', fallDist + 'px');
+    zone.appendChild(drop);
+
+    // Ripple at landing
+    const rippleDelay = delay + dur * 0.88;
+    setTimeout(() => {
+      if (!document.getElementById('readingZone')) return;
+      const rip = document.createElement('div');
+      rip.className = 'rain-ripple';
+      rip.style.left = x + 'px';
+      rip.style.top = (fallDist) + 'px';
+      rip.style.width  = (20 + Math.random() * 30) + 'px';
+      rip.style.height = (6 + Math.random() * 8) + 'px';
+      rip.style.setProperty('--delay', '0s');
+      zone.appendChild(rip);
+      setTimeout(() => rip.remove(), 1000);
+    }, rippleDelay * 1000);
+
+    setTimeout(() => drop.remove(), (delay + dur + 0.1) * 1000);
+  }
+
+  // Color wash deepens with each mark
+  if (wash) {
+    wash.classList.add('washed');
+    const intensity = Math.min(0.06 + count * 0.04, 0.28);
+    wash.style.background = `rgba(70,100,150,${intensity})`;
+  }
+
+  // Text color shift to blue-gray
+  document.querySelectorAll('.poem-line').forEach(l => {
+    const shift = Math.min(count * 15, 80);
+    l.style.color = `rgba(${180 - shift},${185 - shift/2},${220},0.88)`;
+  });
+
+  showToast(`第 ${count} 次標記 · 雨聲入心`);
+}
+
+/* ── 2. FUNNY: 笑聲彈跳 ── button-triggered ── */
+function fireLaughBubble(poem) {
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+  const zone = document.getElementById('readingZone');
+  const btn  = document.getElementById('btnMark');
+
+  // Belly bounce the button
+  btn.classList.remove('belly-bounce');
+  void btn.offsetWidth; // reflow
+  btn.style.animation = 'bellyBounce 500ms cubic-bezier(.36,.07,.19,.97)';
+  setTimeout(() => btn.style.animation = '', 520);
+
+  const texts = ['哈哈哈', '噗嗤', '哈！', '嘻嘻', '哈哈～', 'LOL'];
+  const sides = ['left', 'right', 'left', 'right', 'left', 'right'];
+  const num = Math.min(3 + count, 7);
+
+  for (let i = 0; i < num; i++) {
+    const bubble = document.createElement('div');
+    bubble.className = 'haha-bubble' + (i % 2 === 1 ? ' right' : '');
+    bubble.textContent = texts[i % texts.length];
+    const isRight = i % 2 === 1;
+    bubble.style.setProperty('--rot', (isRight ? 3 : -5) + 'deg');
+    bubble.style.setProperty('--rot2', (isRight ? -3 : 5) + 'deg');
+    bubble.style.setProperty('--dur', (1.8 + Math.random() * 0.6) + 's');
+    bubble.style.setProperty('--delay', (i * 0.16) + 's');
+    if (isRight) {
+      bubble.style.right = (20 + Math.random() * 40) + 'px';
+    } else {
+      bubble.style.left = (20 + Math.random() * 40) + 'px';
+    }
+    bubble.style.bottom = (90 + Math.random() * 100) + 'px';
+
+    // Multi-marked: colorful bubbles
+    if (count >= 3) {
+      const hues = [45, 120, 200, 320, 60];
+      const hue = hues[i % hues.length];
+      bubble.style.borderColor = `hsla(${hue},70%,60%,.5)`;
+      bubble.style.color = `hsla(${hue},80%,72%,.85)`;
+      bubble.style.background = `hsla(${hue},70%,30%,.12)`;
+    }
+    zone.appendChild(bubble);
+    setTimeout(() => bubble.remove(), 3000);
+  }
+
+  showToast(count >= 3 ? '笑聲漣漪 · 共鳴 ×' + count : '哈哈哈 · 已標記');
+}
+
+/* ── 3. EMOTIONAL: 心弦脈動 ── auto + longpress ── */
+function initECG() {
+  const c = document.getElementById('ecgContainer');
+  if (!c) return;
+  setTimeout(() => {
+    c.classList.add('visible');
+    const path = document.getElementById('ecgPath');
+    if (path) setTimeout(() => path.classList.add('drawn'), 100);
+  }, 600);
+}
+
+function fireECGExpand() {
+  const overlay = document.getElementById('ecgExpand');
+  if (!overlay) return;
+  if (overlay.classList.contains('active')) {
+    overlay.classList.remove('active');
+  } else {
+    overlay.classList.add('active');
+  }
+}
+
+/* ── 4. TENSE: 屏息暗角 ── hold button ── */
+function initTenseVignette() {
+  // Vignette is passive, just present
+}
+
+function tensePressStart() {
+  const v = document.getElementById('vignetteOverlay');
+  if (v) {
+    v.classList.remove('release');
+    v.classList.add('hold');
+  }
+  // Darken poem text slightly
+  document.querySelectorAll('.poem-line').forEach(l => {
+    l.style.transition = 'color .2s ease';
+    l.style.color = 'rgba(255,255,255,.55)';
+  });
+}
+
+function tensePressEnd() {
+  const v = document.getElementById('vignetteOverlay');
+  if (v) {
+    v.classList.remove('hold');
+    v.classList.add('release');
+  }
+  document.querySelectorAll('.poem-line').forEach(l => {
+    l.style.transition = 'color 1.2s ease';
+    l.style.color = '';
+  });
+  const poem = state.currentPoem;
+  if (poem) {
+    const count = saveMarkCount(poem.id);
+    updateMarkCounter(count);
+    showToast('屏息後，鬆了一口氣。');
+  }
+}
+
+/* ── 5. ADVENTUROUS: 路徑足跡 ── auto + button adds footprint ── */
+function initPathTrail() {
+  setTimeout(() => {
+    const path = document.getElementById('adventurePath');
+    if (path) {
+      path.style.transition = 'stroke-dashoffset 2.5s cubic-bezier(.4,.0,.2,1)';
+      path.style.strokeDashoffset = '0';
+    }
+    // Waypoint footprints appear along path
+    const waypoints = [
+      { x: 90,  y: 85, delay: 1000 },
+      { x: 200, y: 62, delay: 1700 },
+      { x: 305, y: 68, delay: 2300 },
+    ];
+    const zone = document.getElementById('readingZone');
+    waypoints.forEach(wp => {
+      setTimeout(() => {
+        const fp = document.createElement('div');
+        fp.className = 'footprint';
+        fp.textContent = '👣';
+        fp.style.left = (wp.x - 8) + 'px';
+        fp.style.bottom = (130 - wp.y) + 'px';
+        zone.appendChild(fp);
+        setTimeout(() => fp.classList.add('show'), 20);
+      }, wp.delay);
+    });
+    // Flag at end
+    setTimeout(() => {
+      const flag = document.createElement('div');
+      flag.className = 'adventure-flag';
+      flag.textContent = '🚩';
+      flag.style.right = '16px';
+      flag.style.bottom = '75px';
+      zone.appendChild(flag);
+      setTimeout(() => flag.classList.add('show'), 20);
+      showToast('路途延伸中 · 每一步都算數');
+    }, 3000);
+  }, 400);
+}
+
+function firePathFootprint(poem) {
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+  showToast(`路徑延伸 · 已踏出第 ${count} 步`);
+}
+
+/* ── 6. CHALLENGING: 里程碑碎片 ── button assembles ── */
+function initBadge() {
+  // Fragments start scattered (CSS handles initial scatter)
+}
+
+async function fireBadgeAssemble(poem) {
+  const newCount = (state.badgeCount || 0) + 1;
+  state.badgeCount = newCount;
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+
+  const maxFrags = poem.markMax || 3;
+  const fragIdx = Math.min(newCount, maxFrags);
+
+  // Assemble fragment by fragment
+  for (let i = 1; i <= fragIdx; i++) {
+    const frag = document.getElementById(`frag${i}`);
+    if (frag) {
+      frag.style.transform = 'translate(0,0) rotate(0deg)';
+      frag.classList.add('assembled');
+      if (i === maxFrags) {
+        frag.setAttribute('fill', 'rgba(212,180,60,.85)');
+        document.getElementById(`frag1`)?.setAttribute('fill', 'rgba(212,180,60,.9)');
+        document.getElementById(`frag2`)?.setAttribute('fill', 'rgba(212,180,60,.8)');
+      }
+    }
+  }
+
+  if (newCount >= maxFrags) {
+    await sleep(200);
+    const glow = document.getElementById('badgeGlow');
+    if (glow) {
+      glow.classList.add('active');
+      setTimeout(() => glow.classList.remove('active'), 1200);
+    }
+    showToast('🏅 里程碑完成！攀頂之路，不易。');
+  } else {
+    showToast(`碎片 ${newCount} / ${maxFrags} · 繼續攀登`);
+  }
+}
+
+/* ── 7. RELAXING: 環境音景 ── CSS + toast ── */
+function fireRelaxFlow(poem) {
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+  showToast('已沉浸 · 音景環繞，讓自己流動');
+}
+
+/* ── 8. LIGHTHEARTED: 羽毛飄浮 ── pointer tracking + button drop ── */
+function initFeather() {
+  const fw = document.getElementById('featherWrapper');
+  const zone = document.getElementById('readingZone');
+  if (!fw || !zone) return;
+
+  // Follow pointer horizontally (within bounds)
+  zone.addEventListener('pointermove', featherFollowPointer);
+}
+
+function featherFollowPointer(e) {
+  if (state.featherDropped) return;
+  const fw = document.getElementById('featherWrapper');
+  if (!fw) return;
+  const zone = document.getElementById('readingZone');
+  const rect = zone.getBoundingClientRect();
+  const relX = e.clientX - rect.left;
+  const clampedX = Math.max(30, Math.min(rect.width - 30, relX));
+  fw.style.left = clampedX + 'px';
+  fw.style.transform = `translateX(-50%)`;
+}
+
+async function fireFeatherDrop() {
+  if (state.featherDropped) return;
+  state.featherDropped = true;
+  const poem = state.currentPoem;
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+
+  const fw = document.getElementById('featherWrapper');
+  const zone = document.getElementById('readingZone');
+  if (!fw || !zone) return;
+
+  zone.removeEventListener('pointermove', featherFollowPointer);
+
+  const svg = fw.querySelector('.feather-svg');
+  if (svg) svg.classList.remove('sway');
+
+  // Random drift values
+  const d1 = (Math.random() - .5) * 40;
+  const d2 = (Math.random() - .5) * 40;
+  const d3 = (Math.random() - .5) * 30;
+  fw.style.setProperty('--drift1', d1 + 'px');
+  fw.style.setProperty('--drift2', d2 + 'px');
+  fw.style.setProperty('--drift3', d3 + 'px');
+  fw.style.setProperty('--fall-dur', '4s');
+
+  // Colorful feather after multiple marks
+  if (count >= 3) {
+    const body = document.getElementById('featherBody');
+    if (body) {
+      body.setAttribute('fill', 'url(#featherGrad)');
+      body.style.filter = `hue-rotate(${count * 40}deg)`;
+    }
+  }
+
+  fw.style.animation = '';
+  fw.classList.add('falling');
+
+  await sleep(4000);
+  fw.classList.remove('falling');
+  fw.classList.add('bouncing');
+
+  showToast(count >= 3 ? '🌈 羽毛在氣流中變了顏色' : '羽毛落地 · 輕輕的');
+}
+
+/* ── 9. REFLECTIVE: 靜思沙漏 ── time-based + button ── */
+function initHourglass(poem) {
+  const hc = document.getElementById('hourglassContainer');
+  // Auto-show after 8 seconds
+  state.hourglassTimer = setTimeout(() => {
+    if (!hc || !document.getElementById('readingZone')) return;
+    hc.classList.add('show');
+    // After 5 more seconds (sand flows), prompt
+    state.hourglassTimer = setTimeout(() => {
+      showNotePrompt();
+    }, 5000);
+  }, 8000);
+}
+
+function fireHourglass(poem) {
+  const hc = document.getElementById('hourglassContainer');
+  if (hc && !hc.classList.contains('show')) {
+    hc.classList.add('show');
+    if (state.hourglassTimer) clearTimeout(state.hourglassTimer);
+    state.hourglassTimer = setTimeout(showNotePrompt, 5000);
+  } else {
+    showNotePrompt();
+  }
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+}
+
+function showNotePrompt() {
+  const np = document.getElementById('notePrompt');
+  if (np) np.classList.add('show');
+}
+
+/* ── 10. INSPIRING: 靈光種子 ── seed tap-to-plant ── */
+function initSeed(poem) {
+  const seed = document.getElementById('seedDot');
+  const noteZone = document.getElementById('noteZone');
+  const zone = document.getElementById('readingZone');
+  if (!zone) return;
+
+  // Reposition seed next to target poem line now that the view is visible
+  if (seed) {
+    const lineIdx = parseInt(seed.dataset.seedLine ?? '2');
+    const lines = zone.querySelectorAll('.poem-line');
+    const targetLine = lines[lineIdx];
+    if (targetLine) {
+      const rect = targetLine.getBoundingClientRect();
+      const zoneRect = zone.getBoundingClientRect();
+      if (rect.width > 0) {
+        seed.style.top  = (rect.top - zoneRect.top + rect.height / 2 - 6) + 'px';
+        seed.style.left = (rect.right - zoneRect.left + 8) + 'px';
+        seed.style.right = '';
+      }
+    }
+    seed.addEventListener('click', () => plantSeed());
+  }
+
+  // Show note zone after brief pause
+  setTimeout(() => { if (noteZone) noteZone.classList.add('show'); }, 900);
+}
+
+async function plantSeed() {
+  const seed = document.getElementById('seedDot');
+  const sprout = document.getElementById('sprout');
+  const poem = state.currentPoem;
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+
+  if (!seed) return;
+
+  // Animate seed to note zone position
+  seed.style.transition = 'all 600ms cubic-bezier(.34,1.56,.64,1)';
+  seed.style.top = 'calc(100% - 44px)';
+  seed.style.left = '38px';
+  seed.style.transform = 'scale(.6)';
+  seed.style.opacity = '.3';
+
+  await sleep(650);
+  seed.remove();
+
+  if (sprout) {
+    await sleep(100);
+    sprout.classList.add('show');
+  }
+
+  showToast(count >= 2 ? '🌿 靈感花園漸漸生長' : '✨ 靈感已種下 · 待日後發芽');
+}
+
+function fireSeedPlant(poem) {
+  plantSeed();
+}
+
+/* ── 11. INFORMATIVE: 知識節點 ── tap-triggered (built in buildInfoLine) ── */
+function fireInfoNodes(poem) {
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+  showToast('點擊詩中藍色關鍵詞展開知識節點');
+}
+
+/* ── 12. MYSTERIOUS: 揭紗效果 ── canvas scratch ── */
+function initScratch() {
+  const canvas = document.getElementById('scratchCanvas');
+  const zone = document.getElementById('readingZone');
+  if (!canvas || !zone) return;
+
+  // Size canvas to reading zone
+  const rect = zone.getBoundingClientRect();
+  canvas.width  = rect.width;
+  canvas.height = rect.height;
+
+  const ctx = canvas.getContext('2d');
+
+  // Draw the veil
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, 'rgba(6, 4, 26, 0.96)');
+  grad.addColorStop(1, 'rgba(14, 8, 40, 0.96)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Subtle texture hint
+  ctx.fillStyle = 'rgba(180,160,240,.18)';
+  ctx.font = '13px "Noto Sans TC", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('詩意藏於薄紗之後', canvas.width / 2, canvas.height * .48);
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillStyle = 'rgba(180,160,240,.1)';
+  ctx.fillText('THE MEANING AWAITS YOUR TOUCH', canvas.width / 2, canvas.height * .48 + 22);
+
+  let isPointerDown = false;
+  let revealChecked = false;
+
+  function scratchAt(x, y) {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Sand particles
+    for (let i = 0; i < 2; i++) {
+      const p = document.createElement('div');
+      p.className = 'sand-particle';
+      p.style.left = (x + (Math.random()-.5) * 24) + 'px';
+      p.style.top  = (y + (Math.random()-.5) * 24) + 'px';
+      p.style.setProperty('--dx', ((Math.random()-.5) * 20) + 'px');
+      p.style.setProperty('--dy', (5 + Math.random() * 12) + 'px');
+      p.style.setProperty('--d', (.4 + Math.random() * .5) + 's');
+      zone.appendChild(p);
+      setTimeout(() => p.remove(), 800);
+    }
+
+    if (!revealChecked) {
+      revealChecked = true;
+      setTimeout(() => {
+        revealChecked = false;
+        checkScratchReveal(ctx, canvas);
+      }, 200);
+    }
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    isPointerDown = true;
+    canvas.setPointerCapture(e.pointerId);
+    const r = canvas.getBoundingClientRect();
+    scratchAt(e.clientX - r.left, e.clientY - r.top);
+    // Hide hint
+    const hint = document.getElementById('scratchHint');
+    if (hint) { hint.style.opacity = '0'; hint.style.transition = 'opacity 500ms'; }
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    if (!isPointerDown) return;
+    const r = canvas.getBoundingClientRect();
+    scratchAt(e.clientX - r.left, e.clientY - r.top);
+  });
+
+  canvas.addEventListener('pointerup', () => { isPointerDown = false; });
+}
+
+function checkScratchReveal(ctx, canvas) {
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  let transparent = 0, total = 0;
+  for (let i = 3; i < data.length; i += 4 * 12) { // sample every 12th pixel
+    if (data[i] < 80) transparent++;
+    total++;
+  }
+  if (!state.scratchRevealDone && transparent / total > 0.55) {
+    state.scratchRevealDone = true;
+    canvas.style.transition = 'opacity 1s ease-out';
+    canvas.style.opacity = '0';
+    const hint = document.getElementById('scratchHint');
+    if (hint) hint.remove();
+    setTimeout(() => {
+      canvas.remove();
+      showToast('謎底已揭曉 · 你讀到了哪一種詮釋？');
+    }, 1100);
+    const poem = state.currentPoem;
+    if (poem) {
+      const count = saveMarkCount(poem.id);
+      updateMarkCounter(count);
+    }
+  }
+}
+
+/* ── 13. HOPEFUL: 晨光漸亮 ── button × 3 progressively brighter ── */
+async function fireMorningLight(poem) {
+  const light = document.getElementById('hopefulLight');
+  const burst = document.getElementById('hopefulBurst');
+  if (!light) return;
+
+  state.hopefulLevel = Math.min((state.hopefulLevel || 0) + 1, 3);
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+
+  light.classList.remove('glow-1','glow-2','glow-3');
+  void light.offsetWidth;
+  light.classList.add(`glow-${state.hopefulLevel}`);
+
+  // Poem text warms up
+  document.querySelectorAll('.poem-line').forEach(l => {
+    const warm = state.hopefulLevel * 18;
+    l.style.transition = 'color 1.8s ease';
+    l.style.color = `rgba(${230 + warm}, ${210 + warm * .5}, ${180}, .92)`;
+  });
+
+  if (state.hopefulLevel >= 3) {
+    await sleep(1600);
+    if (burst) {
+      burst.classList.add('burst');
+      setTimeout(() => burst.classList.remove('burst'), 1300);
+    }
+    showToast('☀️ 晨光綻放 · 更上一層樓');
+  } else {
+    showToast(`晨光 ${state.hopefulLevel}/3 · 繼續閱讀，光更亮一分`);
+  }
+}
+
+/* ── 14. DARK: 影隨身動 ── pointer tracking + button longpress ── */
+function initDarkShadow() {
+  const zone = document.getElementById('readingZone');
+  if (!zone) return;
+
+  let rafPending = false;
+  let lastPx = 50, lastPy = 50;
+
+  function updateShadow(px, py) {
+    const shadow = document.getElementById('darkShadow');
+    if (!shadow) return;
+    // Shadow is strongest AWAY from pointer — creates "following shadow" illusion
+    const invX = (1 - px/100) * 100;
+    const invY = (1 - py/100) * 100;
+    shadow.style.background = `radial-gradient(ellipse 260px 320px at ${px}% ${py}%,
+      transparent 0%, rgba(0,0,0,.2) 35%, rgba(0,0,0,.7) 80%, rgba(0,0,0,.92) 100%)`;
+  }
+
+  zone.addEventListener('pointermove', e => {
+    const rect = zone.getBoundingClientRect();
+    lastPx = ((e.clientX - rect.left) / rect.width * 100);
+    lastPy = ((e.clientY - rect.top)  / rect.height * 100);
+    if (!rafPending) {
+      rafPending = true;
+      state.darkRafId = requestAnimationFrame(() => {
+        updateShadow(lastPx, lastPy);
+        rafPending = false;
+      });
+    }
+  });
+
+  // Init with center shadow
+  updateShadow(50, 50);
+}
+
+async function fireDarkRitual(poem) {
+  const ritual = document.getElementById('darkRitual');
+  if (!ritual) return;
+  const count = saveMarkCount(poem.id);
+  updateMarkCounter(count);
+
+  const shadow = document.getElementById('darkShadow');
+  const px = 50, py = 50;
+  if (ritual) {
+    ritual.style.setProperty('--rx', px + '%');
+    ritual.style.setProperty('--ry', py + '%');
+    ritual.classList.add('intensify');
+    ritual.style.background = `radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,.95) 100%)`;
+  }
+  // Lines fade to near-invisible
+  document.querySelectorAll('.poem-line').forEach(l => {
+    l.style.transition = 'color .2s ease';
+    l.style.color = 'rgba(255,255,255,.18)';
+  });
+
+  await sleep(1600);
+
+  // Ritual completion — shadow lifts
+  if (ritual) ritual.classList.remove('intensify');
+  if (ritual) ritual.classList.add('exhale');
+  document.querySelectorAll('.poem-line').forEach(l => {
+    l.style.transition = 'color 1.4s ease';
+    l.style.color = '';
+  });
+
+  showToast('正視黑暗，陰影淡去 · 儀式完成');
+  setTimeout(() => {
+    if (ritual) ritual.classList.remove('exhale');
+  }, 2000);
+}
+
+/* ══════════════════════════════════════════════
+   MARK BUTTON DISPATCHER
+══════════════════════════════════════════════ */
+function handleMarkButton(poem, eventType) {
+  if (!poem) return;
+  switch (poem.micro) {
+    case 'rain-ripple':    fireRainRipple(poem);    break;
+    case 'laugh-bubble':   fireLaughBubble(poem);   break;
+    case 'ecg-pulse':
+      if (eventType === 'longpress') fireECGExpand();
+      else {
+        const count = saveMarkCount(poem.id);
+        updateMarkCounter(count);
+        showToast('心弦已標記 · 長按展開脈動');
+      }
+      break;
+    case 'tense-vignette': /* handled by pointerdown/up */ break;
+    case 'path-trail':     firePathFootprint(poem); break;
+    case 'badge-collect':  fireBadgeAssemble(poem); break;
+    case 'relax-flow':     fireRelaxFlow(poem);     break;
+    case 'feather-float':  fireFeatherDrop();       break;
+    case 'hourglass':      fireHourglass(poem);     break;
+    case 'seed-plant':     fireSeedPlant(poem);     break;
+    case 'info-nodes':     fireInfoNodes(poem);     break;
+    case 'scratch-veil':   showToast('用手指在詩句上滑動，揭開薄紗'); break;
+    case 'morning-light':  fireMorningLight(poem);  break;
+    case 'shadow-track':   fireDarkRitual(poem);    break;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   EVENT HANDLERS
+══════════════════════════════════════════════ */
+document.getElementById('backBtn').addEventListener('click', goBack);
+
+// Mark button — click + long-press detection
+const markBtn = document.getElementById('btnMark');
+let pressTimer = null;
+let isLongPress = false;
+
+markBtn.addEventListener('pointerdown', () => {
+  isLongPress = false;
+  const poem = state.currentPoem;
+  if (!poem) return;
+
+  if (poem.micro === 'tense-vignette') {
+    tensePressStart();
+    return;
+  }
+
+  pressTimer = setTimeout(() => {
+    isLongPress = true;
+    handleMarkButton(poem, 'longpress');
+  }, 600);
+});
+
+markBtn.addEventListener('pointerup', () => {
+  const poem = state.currentPoem;
+  if (!poem) return;
+
+  if (poem.micro === 'tense-vignette') {
+    tensePressEnd();
+    return;
+  }
+
+  if (pressTimer) clearTimeout(pressTimer);
+  if (!isLongPress) {
+    handleMarkButton(poem, 'click');
+  }
+  isLongPress = false;
+});
+
+markBtn.addEventListener('pointerleave', () => {
+  if (pressTimer) clearTimeout(pressTimer);
+  const poem = state.currentPoem;
+  if (poem && poem.micro === 'tense-vignette') tensePressEnd();
+});
+
+// Info button — show poem hint
+document.getElementById('btnInfo').addEventListener('click', () => {
+  const poem = state.currentPoem;
+  if (!poem) return;
+  showToast(poem.hint || poem.highlight, 3000);
+});
+
+// Share button
+document.getElementById('btnShare').addEventListener('click', () => {
+  const poem = state.currentPoem;
+  if (!poem) return;
+  showToast(`分享〈${poem.title}〉· ${poem.highlight}`);
+});
+
+// Note prompt handlers (Reflective)
+document.addEventListener('click', e => {
+  if (e.target.id === 'noteYes') {
+    const np = document.getElementById('notePrompt');
+    if (np) np.classList.remove('show');
+    showToast('📝 筆記已開啟 · 留下此刻想法', 3000);
+  }
+  if (e.target.id === 'noteDismiss') {
+    const np = document.getElementById('notePrompt');
+    if (np) np.classList.remove('show');
+  }
+});
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+buildSelector();
+</script>
+</body>
+</html>
