@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧬 病毒攻擊六階段 × 古埃及符號對應</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .stages-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .stage-card {
+            background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.05));
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stage-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 215, 0, 0.6);
+            box-shadow: 0 12px 40px rgba(255, 215, 0, 0.2);
+        }
+        
+        .stage-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #FFD700, #FFA500, #FF6B35);
+        }
+        
+        .stage-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .virus-action {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .virus-detail {
+            font-size: 0.95rem;
+            color: #ccc;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .symbol-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid #FFD700;
+        }
+        
+        .symbol-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .symbol-icon {
+            font-size: 2rem;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+        }
+        
+        .symbol-meaning {
+            font-size: 1rem;
+            color: #f0f0f0;
+            line-height: 1.5;
+        }
+        
+        .flow-arrow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            font-size: 2rem;
+            color: #FFD700;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        .process-flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 40px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .stages-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stage-card {
+                padding: 20px;
+            }
+        }
+        
+        .legend {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .legend-title {
+            font-size: 1.3rem;
+            color: #FFD700;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .legend-text {
+            color: #ccc;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🧬 病毒攻擊六階段 × 古埃及符號對應</h1>
+        
+        <div class="legend">
+            <div class="legend-title">圖表說明</div>
+            <div class="legend-text">
+                以下圖表將病毒感染細胞的六個關鍵階段，與古埃及神秘符號進行創意對應，<br>
+                透過象徵意義的連結，呈現病毒攻擊過程的深層隱喻
+            </div>
+        </div>
+        
+        <div class="process-flow">
+            <div class="stages-container">
+                <div class="stage-card">
+                    <div class="stage-number">1️⃣ 第一階段</div>
+                    <div class="virus-action">進入細胞</div>
+                    <div class="virus-detail">結合受體並穿透細胞膜</div>
+                    <div class="symbol-section">
+                        <div class="symbol-name">
+                            <span class="symbol-icon">🐍</span>
+                            Uraeus（眼鏡蛇）
+                        </div>
+                        <div class="symbol-meaning">
+                            象徵警覺與攻擊，像病毒精準地偵測並入侵細胞，如同眼鏡蛇迅速而致命的攻擊
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="stage-card">
+                    <div class="stage-number">2️⃣ 第二階段</div>
+                    <div class="virus-action">剝離外殼</div>
+                    <div class="virus-detail">酵素剝除病毒外殼</div>
+                    <div class="symbol-section">
+                        <div class="symbol-name">
+                            <span class="symbol-icon">🪢</span>
+                            Tyet結（伊西斯結）
+                        </div>
+                        <div class="symbol-meaning">
+                            象徵解開與轉化，如同病毒脫殼釋放內部訊息，展現生命的神秘轉換過程
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="stage-card">
+                    <div class="stage-number">3️⃣ 第三階段</div>
+                    <div class="virus-action">釋放遺傳密碼</div>
+                    <div class="virus-detail">RNA/DNA進入細胞質</div>
+                    <div class="symbol-section">
+                        <div class="symbol-name">
+                            <span class="symbol-icon">𓂓</span>
+                            Ka（生命力）
+                        </div>
+                        <div class="symbol-meaning">
+                            象徵生命能量的注入，病毒開始影響細胞運作，如同靈魂力量的灌注
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="stage-card">
+                    <div class="stage-number">4️⃣ 第四階段</div>
+                    <div class="virus-action">滲入製造系統</div>
+                    <div class="virus-detail">細胞開始製造病毒蛋白</div>
+                    <div class="symbol-section">
+                        <div class="symbol-name">
+                            <span class="symbol-icon">𓋹</span>
+                            Was權杖
+                        </div>
+                        <div class="symbol-meaning">
+                            象徵控制與支配，病毒奪取細胞的製造權，如同法老手持權杖統治王國
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="stage-card">
+                    <div class="stage-number">5️⃣ 第五階段</div>
+                    <div class="virus-action">製造新病毒</div>
+                    <div class="virus-detail">組裝新病毒顆粒</div>
+                    <div class="symbol-section">
+                        <div class="symbol-name">
+                            <span class="symbol-icon">🪬</span>
+                            Scarab（聖甲蟲）
+                        </div>
+                        <div class="symbol-meaning">
+                            象徵重生與繁衍，細胞成為病毒的孵化場，如同聖甲蟲象徵的永恆循環
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="stage-card">
+                    <div class="stage-number">6️⃣ 第六階段</div>
+                    <div class="virus-action">細胞崩潰釋放</div>
+                    <div class="virus-detail">細胞破裂，病毒擴散</div>
+                    <div class="symbol-section">
+                        <div class="symbol-name">
+                            <span class="symbol-icon">👁️</span>
+                            Eye of Horus（荷魯斯之眼）
+                        </div>
+                        <div class="symbol-meaning">
+                            象徵洞察與擴張，病毒如神之眼般蔓延至其他細胞，展現無所不見的力量
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 添加滾動動畫效果
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // 初始化卡片動畫
+        document.querySelectorAll('.stage-card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+            observer.observe(card);
+        });
+        
+        // 頁面載入完成後觸發動畫
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.querySelectorAll('.stage-card').forEach(card => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                });
+            }, 300);
+        });
+    </script>
+</body>
+</html>

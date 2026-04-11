@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senet遊戲棋局分析 - Operations Research視角</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5dc;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #8b4513;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .game-board {
+            background-color: #deb887;
+            border: 3px solid #8b4513;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 2px;
+        }
+        
+        .square {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #8b4513;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background-color: #f4e4bc;
+            font-size: 12px;
+            font-weight: bold;
+            color: #8b4513;
+        }
+        
+        .square-15 { background-color: #ffd700; }
+        .square-26 { background-color: #32cd32; color: white; }
+        .square-27 { background-color: #dc143c; color: white; }
+        .square-28, .square-29 { background-color: #9370db; color: white; }
+        .square-30 { background-color: #ff69b4; color: white; }
+        
+        .piece {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 2px;
+        }
+        
+        .white-piece {
+            background-color: white;
+            border: 2px solid #333;
+            color: #333;
+        }
+        
+        .black-piece {
+            background-color: black;
+            border: 2px solid white;
+            color: white;
+        }
+        
+        .square-number {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .legend {
+            background-color: white;
+            border: 2px solid #8b4513;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: inline-block;
+            vertical-align: top;
+            margin-left: 20px;
+            width: 250px;
+        }
+        
+        .turn-controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .turn-button {
+            background-color: #4169e1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .turn-button:hover {
+            background-color: #1e90ff;
+        }
+        
+        .turn-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .current-turn {
+            background-color: #e6f3ff;
+            border: 2px solid #4169e1;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .black-turn { border-color: #333; background-color: #f0f0f0; }
+        .white-turn { border-color: #666; background-color: #fafafa; }
+        
+        .piece-count {
+            text-align: center;
+            font-weight: bold;
+            color: #8b4513;
+            margin: 10px 0;
+        }
+        
+        .tap-section {
+            background-color: #f8f8ff;
+            border: 2px solid #666;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .game-status {
+            background-color: #f0f8f0;
+            border: 2px solid #228b22;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Senet遊戲棋局分析 - Operations Research視角</h1>
+        
+        <div style="display: flex; align-items: flex-start;">
+            <div class="game-board">
+                <div class="board-grid" id="gameBoard"></div>
+                <div class="piece-count" id="pieceCount">棋盤上棋子數量：14</div>
+            </div>
+            
+            <div class="legend">
+                <h3>規則說明</h3>
+                <div>• 黑棋先手（7個棋子）</div>
+                <div>• 白棋後手（7個棋子）</div>
+                <div>• 重生之屋 (15) - 黃色</div>
+                <div>• 美好之屋 (26) - 綠色</div>
+                <div>• 屈辱之屋 (27) - 紅色</div>
+                <div>• 出口格 (28,29,30) - 紫色/粉色</div>
+            </div>
+        </div>
+        
+        <div class="turn-controls">
+            <button class="turn-button" onclick="previousTurn()" id="prevBtn">上一回合</button>
+            <span id="turnDisplay">回合 0 - 初始狀態</span>
+            <button class="turn-button" onclick="nextTurn()" id="nextBtn">下一回合</button>
+        </div>
+        
+        <div class="tap-section">
+            <h2>Think Aloud Protocol 認知過程記錄</h2>
+            <div id="currentTurnDisplay"></div>
+        </div>
+        
+        <div class="game-status" id="gameStatus">
+            遊戲狀態：初始設置 | 總回合數：0
+        </div>
+    </div>
+    
+    <script>
+        let currentTurn = 0;
+        let turns = [];
+        
+        function initializeGame() {
+            const boardLayout = [
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                [20, 19, 18, 17, 16, 15, 14, 13, 12, 11],
+                [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+            ];
+            
+            turns = [
+                {
+                    turn: 0,
+                    state: {1: 'W1', 2: 'B1', 3: 'W2', 4: 'B2', 5: 'W3', 6: 'B3', 7: 'W4', 8: 'B4', 9: 'W5', 10: 'B5', 11: 'W6', 12: 'B6', 13: 'W7', 14: 'B7'},
+                    title: "初始設置",
+                    player: "",
+                    dice: "",
+                    tap: "遊戲開始，14個棋子交錯放置在前14格。黑棋將先手。",
+                    decision: "設置完成，等待黑棋先手。",
+                    status: "初始設置 | 總回合數：0",
+                    pieceCount: 14
+                },
+                {
+                    turn: 1,
+                    state: {1: 'W1', 2: 'W3', 3: 'W2', 4: 'B2', 5: 'B1', 6: 'B3', 7: 'W4', 8: 'B4', 9: 'W5', 10: 'B5', 11: 'W6', 12: 'B6', 13: 'W7', 14: 'B7'},
+                    title: "回合1 - 黑棋，擲出3點",
+                    player: "black",
+                    dice: 3,
+                    tap: "我是黑棋先手，擲出3點。我可以攻擊位置5的白棋W3！",
+                    decision: "移動B1：位置2→5，攻擊W3",
+                    status: "早期階段 | 總回合數：1",
+                    pieceCount: 14
+                },
+                {
+                    turn: 2,
+                    state: {1: 'W1', 2: 'W3', 3: 'B1', 4: 'B2', 5: 'W2', 6: 'B3', 7: 'W4', 8: 'B4', 9: 'W5', 10: 'B5', 11: 'W6', 12: 'B6', 13: 'W7', 14: 'B7'},
+                    title: "回合2 - 白棋，擲出2點",
+                    player: "white",
+                    dice: 2,
+                    tap: "2點，我可以反攻！移動W2攻擊B1。",
+                    decision: "移動W2：位置3→5，攻擊B1",
+                    status: "早期階段 | 總回合數：2",
+                    pieceCount: 14
+                },
+                {
+                    turn: 3,
+                    state: {1: 'W1', 2: 'W3', 3: 'B1', 4: 'B2', 5: 'W2', 6: '', 7: 'B3', 8: 'B4', 9: 'W5', 10: 'B5', 11: 'W6', 12: 'B6', 13: 'W7', 14: 'B7'},
+                    title: "回合3 - 黑棋，擲出1點",
+                    player: "black",
+                    dice: 1,
+                    tap: "只有1點，選擇有限。移動B3前進一格。",
+                    decision: "移動B3：位置6→7",
+                    status: "早期階段 | 總回合數：3",
+                    pieceCount: 14
+                },
+                {
+                    turn: 4,
+                    state: {1: 'W1', 2: 'W3', 3: 'B1', 4: 'B2', 5: '', 6: '', 7: 'B3', 8: 'B4', 9: 'W2', 10: 'B5', 11: 'W6', 12: 'B6', 13: 'W7', 14: 'B7'},
+                    title: "回合4 - 白棋，擲出4點",
+                    player: "white",
+                    dice: 4,
+                    tap: "4點！好機會，跳過擁擠區域。",
+                    decision: "移動W2：位置5→9",
+                    status: "中盤階段 | 總回合數：4",
+                    pieceCount: 14
+                },
+                {
+                    turn: 5,
+                    state: {1: 'W1', 2: 'W3', 3: 'B1', 4: 'B2', 5: 'W5', 6: '', 7: 'B3', 8: 'B4', 9: 'W2', 10: '', 11: 'W6', 12: 'B6', 13: 'W7', 14: 'B7', 15: 'B5'},
+                    title: "回合5 - 黑棋，擲出5點",
+                    player: "black",
+                    dice: 5,
+                    tap: "5點！我要到達重生之屋！",
+                    decision: "移動W5到位置5，移動B5→15（重生之屋）",
+                    status: "中盤階段 | 總回合數：5 | 黑棋領先",
+                    pieceCount: 14
+                }
+            ];
+            
+            createBoard(boardLayout);
+            displayTurn();
+        }
+        
+        function createBoard(layout) {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 10; col++) {
+                    const square = document.createElement('div');
+                    const squareNum = layout[row][col];
+                    
+                    square.className = 'square';
+                    square.id = 'square-' + squareNum;
+                    
+                    if (squareNum === 15) square.classList.add('square-15');
+                    else if (squareNum === 26) square.classList.add('square-26');
+                    else if (squareNum === 27) square.classList.add('square-27');
+                    else if (squareNum === 28 || squareNum === 29) square.classList.add('square-28');
+                    else if (squareNum === 30) square.classList.add('square-30');
+                    
+                    const numberDiv = document.createElement('div');
+                    numberDiv.className = 'square-number';
+                    numberDiv.textContent = squareNum;
+                    square.appendChild(numberDiv);
+                    
+                    board.appendChild(square);
+                }
+            }
+        }
+        
+        function displayTurn() {
+            const turnData = turns[currentTurn];
+            if (!turnData) return;
+            
+            document.getElementById('turnDisplay').textContent = '回合 ' + currentTurn + ' - ' + turnData.title;
+            document.getElementById('gameStatus').textContent = turnData.status;
+            document.getElementById('pieceCount').textContent = '棋盤上棋子數量：' + turnData.pieceCount;
+            
+            // Clear all pieces
+            document.querySelectorAll('.piece').forEach(function(p) {
+                p.remove();
+            });
+            
+            // Place pieces
+            Object.keys(turnData.state).forEach(function(square) {
+                const piece = turnData.state[square];
+                if (piece) {
+                    const squareElement = document.getElementById('square-' + square);
+                    if (squareElement) {
+                        const pieceElement = document.createElement('div');
+                        pieceElement.className = 'piece ' + (piece.startsWith('W') ? 'white-piece' : 'black-piece');
+                        pieceElement.textContent = piece;
+                        squareElement.appendChild(pieceElement);
+                    }
+                }
+            });
+            
+            // Display TAP information
+            const playerClass = turnData.player === 'black' ? 'black-turn' : 
+                               turnData.player === 'white' ? 'white-turn' : '';
+            
+            document.getElementById('currentTurnDisplay').innerHTML = 
+                '<div class="current-turn ' + playerClass + '">' +
+                '<div><strong>' + turnData.title + '</strong></div>' +
+                '<div><strong>TAP記錄：</strong>' + turnData.tap + '</div>' +
+                '<div><strong>決策：</strong>' + turnData.decision + '</div>' +
+                '</div>';
+            
+            // Update button states
+            document.getElementById('prevBtn').disabled = currentTurn === 0;
+            document.getElementById('nextBtn').disabled = currentTurn === turns.length - 1;
+        }
+        
+        function nextTurn() {
+            if (currentTurn < turns.length - 1) {
+                currentTurn++;
+                displayTurn();
+            }
+        }
+        
+        function previousTurn() {
+            if (currentTurn > 0) {
+                currentTurn--;
+                displayTurn();
+            }
+        }
+        
+        window.onload = initializeGame;
+    </script>
+</body>
+</html>
