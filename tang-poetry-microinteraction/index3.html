@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Digital Inkstone | Tang Dynasty Poetry Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&amp;family=Noto+Sans+TC:wght@300;400;500&amp;family=JetBrains+Mono:wght@400;500&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #0c1420;
+            color: #dbe3f4;
+            font-family: 'Noto Sans TC', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .font-serif { font-family: 'Noto Serif TC', serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-label { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0c1420; }
+        ::-webkit-scrollbar-thumb { background: #18202c; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2d3542; }
+
+        .glass-nav {
+            background-color: rgba(15, 26, 46, 0.8);
+            backdrop-filter: blur(16px);
+        }
+        
+        .ink-gradient {
+            background: radial-gradient(circle at center, #0d1a2e 0%, #0c1420 100%);
+        }
+
+        .poetry-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#b8c8db",
+                      "on-surface": "#dbe3f4",
+                      "error-container": "#93000a",
+                      "secondary-container": "#5d4426",
+                      "on-background": "#dbe3f4",
+                      "primary-fixed-dim": "#bac7e2",
+                      "on-secondary-container": "#d5b38c",
+                      "on-tertiary-fixed": "#0c1d2b",
+                      "surface-dim": "#0c1420",
+                      "secondary-fixed-dim": "#e4c199",
+                      "outline": "#8f9097",
+                      "error": "#ffb4ab",
+                      "on-secondary-fixed-variant": "#5a4224",
+                      "background": "#0c1420",
+                      "on-primary-container": "#77839c",
+                      "on-error-container": "#ffdad6",
+                      "primary": "#bac7e2",
+                      "tertiary-fixed": "#d3e4f8",
+                      "on-surface-variant": "#c5c6cd",
+                      "on-error": "#690005",
+                      "surface-bright": "#323947",
+                      "primary-fixed": "#d6e3fe",
+                      "inverse-surface": "#dbe3f4",
+                      "on-tertiary-container": "#748496",
+                      "surface-tint": "#bac7e2",
+                      "primary-container": "#0d1a2e",
+                      "tertiary": "#b8c8db",
+                      "tertiary-container": "#0a1b29",
+                      "surface-variant": "#2d3542",
+                      "on-secondary-fixed": "#2a1801",
+                      "on-primary": "#243146",
+                      "on-tertiary": "#223241",
+                      "on-secondary": "#412c10",
+                      "inverse-primary": "#525f76",
+                      "secondary-fixed": "#ffddb7",
+                      "secondary": "#e4c199",
+                      "on-primary-fixed": "#0f1c30",
+                      "surface-container-low": "#141c28",
+                      "surface-container": "#18202c",
+                      "outline-variant": "#44474d",
+                      "on-tertiary-fixed-variant": "#394858",
+                      "surface-container-lowest": "#070e1a",
+                      "surface-container-high": "#232a37",
+                      "inverse-on-surface": "#29313e",
+                      "on-primary-fixed-variant": "#3b475d",
+                      "surface-container-highest": "#2d3542",
+                      "surface": "#0c1420"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Noto Serif TC"],
+                      "body": ["Noto Serif TC"],
+                      "label": ["Inter"]
+              }
+            },
+          }
+        }
+      </script>
+</head>
+<body class="selection:bg-secondary/30 selection:text-secondary">
+<!-- Top Navigation Bar -->
+<nav class="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-xl">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-7xl mx-auto">
+<div class="text-2xl font-serif tracking-tighter text-blue-200">The Digital Inkstone</div>
+<div class="hidden md:flex items-center gap-10">
+<a class="text-amber-200 border-b-2 border-amber-200 pb-1 font-label text-sm uppercase tracking-widest transition-all duration-300" href="#">Home</a>
+<a class="text-slate-300 hover:text-white transition-colors font-label text-sm uppercase tracking-widest hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded" href="#gallery">Gallery</a>
+<a class="text-slate-300 hover:text-white transition-colors font-label text-sm uppercase tracking-widest hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded" href="#contact">Contact</a>
+<button class="bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/30 px-6 py-2 text-sm font-label uppercase tracking-widest transition-all duration-200 scale-95 hover:scale-100">Begin Reading</button>
+</div>
+</div>
+</nav>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="min-h-[819px] flex flex-col items-center justify-center text-center px-6 ink-gradient relative overflow-hidden">
+<!-- Decorative Element -->
+<div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center">
+<span class="text-[40rem] font-serif leading-none select-none text-primary">唐</span>
+</div>
+<div class="relative z-10 max-w-4xl">
+<p class="font-mono text-secondary text-xs uppercase tracking-[0.4em] mb-8">Ethereal Manuscript v1.0</p>
+<h1 class="text-6xl md:text-8xl font-serif font-black text-on-surface mb-8 leading-tight tracking-tight">
+                    Where Ancient Ink <br/>
+<span class="text-primary italic">Meets Living Light</span>
+</h1>
+<p class="text-xl md:text-2xl font-serif text-on-primary-container max-w-2xl mx-auto leading-relaxed mb-12">
+                    A digital sanctuary curated for the preservation and contemplation of Tang Dynasty poetry. Every stroke a memory, every character a world.
+                </p>
+<div class="flex flex-col md:flex-row gap-6 justify-center items-center">
+<a class="bg-primary text-on-primary px-10 py-4 font-label text-sm uppercase tracking-widest hover:bg-primary-fixed transition-colors duration-300" href="#gallery">Explore the Archive</a>
+<div class="flex items-center gap-4 text-on-surface-variant font-mono text-sm">
+<span class="w-12 h-[1px] bg-outline-variant"></span>
+                        Scroll to unroll the manuscript
+                    </div>
+</div>
+</div>
+</section>
+<!-- Gallery / Showcase Section -->
+<section class="py-32 px-8 max-w-7xl mx-auto" id="gallery">
+<div class="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+<div>
+<h2 class="text-4xl font-serif text-secondary mb-4">Moods of the Middle Kingdom</h2>
+<p class="text-on-surface-variant max-w-md font-serif">Select a thematic gateway to discover poems categorized by emotional resonance and natural imagery.</p>
+</div>
+<div class="flex gap-3">
+<span class="rounded-full bg-surface-container-high px-4 py-1.5 text-xs font-mono text-tertiary flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> 1,240 Verses Found
+                    </span>
+</div>
+</div>
+<!-- Bento Grid of Mood Cards -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[800px]">
+<!-- Card: Quietude -->
+<div class="md:col-span-8 group relative overflow-hidden bg-surface-container-low rounded-xl flex flex-col p-8 transition-all duration-300 hover:scale-[1.01] hover:bg-surface-container-high cursor-pointer">
+<div class="absolute top-0 left-0 w-full h-full opacity-20 transition-opacity duration-500 group-hover:opacity-40">
+<img class="w-full h-full object-cover grayscale" data-alt="minimalist mountain range at dawn with thick morning fog and a single pine tree silhouette in the distance" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB37VCLzBJl5ZYppgFvqT6InssWctX04Y4Yp3OehkCtcWk8FYhjv_ry4dUepoOme10-RfeqnSDC4ojEpYrwYB2sGlR30lM6b3ATjQ1wvdmW4T9z_XwbN7Dl8UpcUA_7FkbsCPdrux56Ivdxq3_KhaDrQxr8nINdsphYxNgZVsbrYUKJVea08-A5PsOJ2O5wZXjfNJzz2MCITp7ZaCd-KsHAZoxOFS1moKjIWCrZJiI73oDCiEhazBZhsKF3vjdAALg4fUBM50IuSfM"/>
+</div>
+<div class="relative z-10 h-full flex flex-col">
+<div class="flex justify-between items-start mb-12">
+<span class="material-symbols-outlined text-4xl text-secondary" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="font-mono text-xs text-on-surface-variant uppercase tracking-widest">Category 01</span>
+</div>
+<h3 class="text-5xl font-serif text-on-surface mb-4">Quietude</h3>
+<p class="text-on-surface-variant max-w-sm mb-auto font-serif italic text-lg leading-relaxed">
+                            "Empty mountain, no one seen, only the sound of voices heard."
+                        </p>
+<div class="flex items-center gap-4 text-xs font-mono text-secondary mt-8 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Enter the Stillness <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Card: Adventure -->
+<div class="md:col-span-4 group relative overflow-hidden bg-surface-container-low rounded-xl flex flex-col p-8 transition-all duration-300 hover:scale-[1.01] hover:bg-surface-container-high cursor-pointer">
+<div class="flex justify-between items-start mb-8">
+<span class="material-symbols-outlined text-4xl text-primary">explore</span>
+<span class="font-mono text-xs text-on-surface-variant uppercase tracking-widest">Category 02</span>
+</div>
+<h3 class="text-3xl font-serif text-on-surface mb-4">Adventure</h3>
+<p class="text-on-surface-variant font-serif mb-8 leading-relaxed">Heroic journeys across the Silk Road and the untamed frontiers of the West.</p>
+<div class="mt-auto pt-8 border-t border-white/5">
+<img class="w-full h-32 object-cover rounded grayscale hover:grayscale-0 transition-all duration-700" data-alt="close-up of a weathered stone sculpture of a horse from the tang dynasty with dramatic side lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3VwI4gbOBKJCebk0ecEf_lBIxsuzb2wiZNaoB6WnofgepfLvUgPZBR8rYWf7xa429JM2zZhBRBicciJTWVsIMj2mZsahk1ER1Hov-RcrvVbn4_6aWo3cgYy6cz_Mcs4S8DP-XsG3zFEsSQQLyuwQtTQudeI4V_feQjbeLNd6izbcRq09S8BItNmPuPLW2rnl_V-npNnpHdD9gtzYVB_mcfdQJMg3-sYwDIyA40qmistEPUwOjxWQEz32tUOB3n-JAHiWotevrHjI"/>
+</div>
+</div>
+<!-- Card: Mystery -->
+<div class="md:col-span-4 group relative overflow-hidden bg-surface-container-low rounded-xl flex flex-col p-8 transition-all duration-300 hover:scale-[1.01] hover:bg-surface-container-high cursor-pointer">
+<div class="flex justify-between items-start mb-8">
+<span class="material-symbols-outlined text-4xl text-tertiary">nightlight</span>
+<span class="font-mono text-xs text-on-surface-variant uppercase tracking-widest">Category 03</span>
+</div>
+<h3 class="text-3xl font-serif text-on-surface mb-4">Mystery</h3>
+<p class="text-on-surface-variant font-serif mb-8 leading-relaxed">The intersection of the spiritual realm and the midnight shadow.</p>
+<div class="mt-auto h-24 w-full bg-surface-container-highest/50 rounded-lg flex items-center justify-center overflow-hidden">
+<div class="poetry-vertical text-xl font-serif text-on-surface-variant/40 group-hover:text-tertiary/60 transition-colors">
+                            夢入江南煙水路
+                        </div>
+</div>
+</div>
+<!-- Card: Melancholy -->
+<div class="md:col-span-8 group relative overflow-hidden bg-surface-container-low rounded-xl flex items-center p-12 transition-all duration-300 hover:scale-[1.01] hover:bg-surface-container-high cursor-pointer">
+<div class="w-1/2 pr-8">
+<span class="material-symbols-outlined text-4xl text-error mb-6">water_drop</span>
+<h3 class="text-5xl font-serif text-on-surface mb-4">Melancholy</h3>
+<p class="text-on-surface-variant font-serif text-lg leading-relaxed mb-6">Parting sorrows and the fleeting nature of the spring blossoms.</p>
+<span class="font-mono text-xs text-error/60 uppercase tracking-widest">342 Scrolls Available</span>
+</div>
+<div class="w-1/2 h-full relative overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover grayscale opacity-30 group-hover:opacity-60 transition-opacity duration-700" data-alt="blurred background of pink cherry blossoms against a deep navy evening sky with soft bokeh lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAYJ_oU5EQ_e-OokqJgBsBbL1epoRbBncdbpASYWBq8y4akuA98C7weMBzxkeyLhn0TrBPsUYH2eCQWH4CXcrxd-etVF98JvNj3XISA4a1oM3tSk4_bY92d3qGj3ST6qvFMvd26xFsA8KuFTduCw7UXn4ZHS0d_1gml82e2W9vv0KdeBuTOXhzHf5d_ZqHbKjMpJd8DyU6wZ1h6frM7BEZpDGvNuMU88024-HBWjZDBuHr5X7NNG9ob77ufUSmxbZzlFr_R59Uj-4"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Contact Form Section -->
+<section class="py-32 bg-surface-container-lowest" id="contact">
+<div class="max-w-4xl mx-auto px-8 text-center">
+<div class="inline-block px-4 py-1 border border-secondary/20 rounded-full mb-8">
+<span class="font-mono text-xs text-secondary uppercase tracking-widest">Scholar's Gateway</span>
+</div>
+<h2 class="text-5xl font-serif text-on-surface mb-6">Contribute to the Archive</h2>
+<p class="text-on-surface-variant font-serif text-lg mb-16 max-w-2xl mx-auto">
+                    Are you a researcher, translator, or poet? Join our digital scriptorium and help us map the thousand-year legacy.
+                </p>
+<form class="text-left space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="space-y-2">
+<label class="font-mono text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/70 ml-1">Name / Call Name</label>
+<input class="w-full bg-surface-container px-6 py-4 rounded-lg border-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-surface-variant font-serif transition-all" placeholder="Li Bai" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="font-mono text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/70 ml-1">Electronic Mail</label>
+<input class="w-full bg-surface-container px-6 py-4 rounded-lg border-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-surface-variant font-serif transition-all" placeholder="scholar@inkstone.digital" type="email"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-mono text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/70 ml-1">The Message</label>
+<textarea class="w-full bg-surface-container px-6 py-4 rounded-lg border-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-surface-variant font-serif transition-all" placeholder="Your inquiry or submission details..." rows="5"></textarea>
+</div>
+<div class="flex justify-center">
+<button class="group flex items-center gap-4 bg-secondary text-on-secondary px-12 py-5 font-label text-sm uppercase tracking-widest hover:bg-secondary-fixed transition-all duration-300 scale-100 hover:scale-[1.02]" type="submit">
+                            Submit to Archives
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">send</span>
+</button>
+</div>
+</form>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t border-white/5 bg-slate-950">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-12 py-12 gap-8">
+<div class="flex flex-col gap-2">
+<span class="font-serif text-lg text-amber-200/50">The Digital Inkstone</span>
+<p class="font-mono text-xs uppercase tracking-widest text-slate-500">© 712 AD The Digital Inkstone. All rights reserved.</p>
+</div>
+<div class="flex gap-10">
+<a class="font-mono text-xs uppercase tracking-widest text-slate-500 hover:text-blue-100 transition-colors opacity-80 hover:opacity-100" href="#">Archives</a>
+<a class="font-mono text-xs uppercase tracking-widest text-slate-500 hover:text-blue-100 transition-colors opacity-80 hover:opacity-100" href="#">Scholarship</a>
+<a class="font-mono text-xs uppercase tracking-widest text-slate-500 hover:text-blue-100 transition-colors opacity-80 hover:opacity-100" href="#">Legal</a>
+<a class="font-mono text-xs uppercase tracking-widest text-slate-500 hover:text-blue-100 transition-colors opacity-80 hover:opacity-100" href="#">Privacy</a>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 group cursor-pointer">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-secondary transition-colors">language</span>
+<span class="font-mono text-xs text-slate-500 uppercase tracking-widest">ZH-CN / EN-US</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>
