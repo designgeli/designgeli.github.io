@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotional Motion Graphics</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
+
+  #ui {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 10;
+  }
+  #ui button {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 6px 15px; border-radius: 20px; cursor: pointer;
+    font-size: 10px; font-family: 'Courier New', monospace;
+    letter-spacing: 0.08em; transition: all 0.5s;
+  }
+  #ui button:hover { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.8); }
+  #ui button.active {
+    background: rgba(255,255,255,0.18);
+    color: #fff; border-color: rgba(255,255,255,0.4);
+  }
+
+  #label {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.18); font-size: 9px; font-family: 'Courier New', monospace;
+    letter-spacing: 0.18em; pointer-events: none; text-transform: uppercase;
+  }
+  #audio-hint {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.35); font-size: 11px; font-family: 'Courier New', monospace;
+    letter-spacing: 0.14em; pointer-events: none; text-align: center;
+    transition: opacity 2s; z-index: 5;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="label">Interactive Emotional Motion Graphics</div>
+<div id="ui">
+  <button data-e="0" class="active">CALM</button>
+  <button data-e="1">TURBULENT</button>
+  <button data-e="2">MELANCHOLIC</button>
+  <button data-e="3">JOYFUL</button>
+  <button data-e="4">FRAGMENTED</button>
+</div>
+<div id="audio-hint">tap anywhere to enable audio</div>
+
+<script>
+'use strict';
+
+// ─── WebGL Setup ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+if (!gl) { document.body.innerHTML = '<p style="color:#f00;padding:20px">WebGL2 required</p>'; throw 0; }
+
+function resize() {
+  canvas.width  = window.innerWidth  * (window.devicePixelRatio || 1);
+  canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Vertex Shader ────────────────────────────────────────────────────────────
+const VS = `#version 300 es
+in vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+// ─── Fragment Shader ──────────────────────────────────────────────────────────
+const FS = `#version 300 es
+precision highp float;
+
+uniform float u_time;
+uniform vec2  u_res;
+uniform vec2  u_mouse;
+uniform float u_emotion;
+uniform float u_par_phase;
+uniform float u_par_str;
+uniform float u_interact;
+
+out vec4 fragColor;
+
+// ── Noise ─────────────────────────────────────────────────────────────────────
+float hash(vec2 p) {
+  p = fract(p * vec2(234.34, 435.345));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+}
+
+float fbm3(vec2 p) {
+  float v = 0.0;
+  v += 0.5000 * vnoise(p);      p = p * 2.1 + vec2(1.7, 9.2);
+  v += 0.2500 * vnoise(p);      p = p * 2.1 + vec2(8.3, 2.8);
+  v += 0.1250 * vnoise(p);
+  return v / 0.875;
+}
+
+float fbm4(vec2 p) {
+  float v = 0.0;
+  v += 0.5000 * vnoise(p);      p = p * 2.1 + vec2(1.7, 9.2);
+  v += 0.2500 * vnoise(p);      p = p * 2.1 + vec2(8.3, 2.8);
+  v += 0.1250 * vnoise(p);      p = p * 2.1 + vec2(3.1, 5.4);
+  v += 0.0625 * vnoise(p);
+  return v / 0.9375;
+}
+
+// ── Pareidolia SDFs ───────────────────────────────────────────────────────────
+
+// 1. Sad face — purple cloud at screen center
+float sadFace(vec2 uv, float aspect) {
+  vec2 c = vec2(0.5, 0.51);
+  vec2 p = (uv - c) * vec2(aspect, 1.0);
+  float dens = 0.0;
+
+  // Face oval halo
+  float face = length(p * vec2(1.0, 1.18)) - 0.17;
+  dens += smoothstep(0.03, -0.005, face) * 0.55;
+
+  // Left eye
+  float eL = length((p - vec2(-0.068, 0.055)) * vec2(1.0, 1.5)) - 0.023;
+  dens += smoothstep(0.012, -0.003, eL) * 0.9;
+
+  // Right eye
+  float eR = length((p - vec2( 0.068, 0.055)) * vec2(1.0, 1.5)) - 0.023;
+  dens += smoothstep(0.012, -0.003, eR) * 0.9;
+
+  // Sad mouth: bottom arc of a circle centered above = curves downward
+  vec2 mp = p - vec2(0.0, -0.06);
+  float mDist = abs(length(mp) - 0.068) - 0.009;
+  if (mp.y > 0.0) mDist = 100.0; // only show lower arc = sad curve
+  dens += smoothstep(0.012, -0.002, mDist) * 0.8;
+
+  // Tear
+  vec2 tear = p - vec2(-0.068, -0.01);
+  dens += smoothstep(0.01, -0.002, length(tear * vec2(1.0, 0.65)) - 0.01) * 0.55;
+
+  return clamp(dens, 0.0, 1.0);
+}
+
+// 2. Joyful hand reaching upward — gold
+float joyfulHand(vec2 uv, float aspect) {
+  vec2 c = vec2(0.5, 0.36);
+  vec2 p = (uv - c) * vec2(aspect, 1.0);
+  float dens = 0.0;
+
+  // Palm
+  float palm = length(p * vec2(0.85, 1.0)) - 0.105;
+  dens += smoothstep(0.015, -0.003, palm) * 0.7;
+
+  // Wrist
+  float wrist = length((p - vec2(0.0, -0.115)) * vec2(0.72, 1.0)) - 0.07;
+  dens += smoothstep(0.01, -0.003, wrist) * 0.5;
+
+  // 5 Fingers
+  float fxs[5]; fxs[0]=-0.088; fxs[1]=-0.044; fxs[2]=0.0; fxs[3]=0.044; fxs[4]=0.086;
+  float fhs[5]; fhs[0]=0.068;  fhs[1]=0.090;  fhs[2]=0.1; fhs[3]=0.088; fhs[4]=0.070;
+
+  for (int i = 0; i < 5; i++) {
+    vec2 fp = p - vec2(fxs[i], 0.115 + fhs[i] * 0.5);
+    float finger = max(abs(fp.x) - 0.017, abs(fp.y) - fhs[i]);
+    // Rounded tip
+    float tip = length(fp - vec2(0.0, fhs[i])) - 0.019;
+    finger = min(finger, tip);
+    dens += smoothstep(0.01, -0.003, finger) * 0.78;
+  }
+
+  return clamp(dens, 0.0, 1.0);
+}
+
+// 3. Fragmented eye — teal/green
+float fragmentedEye(vec2 uv, float aspect) {
+  vec2 c = vec2(0.5, 0.5);
+  vec2 p = (uv - c) * vec2(aspect, 1.0);
+  float dens = 0.0;
+
+  // Almond/lens shape: intersection of two circles offset vertically
+  float circ1 = length(p - vec2(0.0,  0.095)) - 0.165;
+  float circ2 = length(p - vec2(0.0, -0.095)) - 0.165;
+  float lens  = max(-circ1, -circ2);
+  // Edge of lens
+  float lensEdge = abs(lens) - 0.007;
+  dens += smoothstep(0.01, -0.002, lensEdge) * 0.65;
+
+  // Iris ring
+  float iris = abs(length(p) - 0.06) - 0.012;
+  dens += smoothstep(0.008, -0.002, iris) * 0.85;
+
+  // Pupil filled
+  float pupil = length(p) - 0.028;
+  dens += smoothstep(0.007, -0.002, pupil) * 0.95;
+
+  // Fragmentation noise breaks it apart
+  float fragNoise = fbm3(p * 18.0 + u_time * 0.25);
+  dens *= 0.55 + 0.45 * fragNoise;
+
+  return clamp(dens, 0.0, 1.0);
+}
+
+// ── Emotion Color Functions ───────────────────────────────────────────────────
+
+vec3 colCalm(vec2 uv, float dc, float t) {
+  // Green edges, deep blue/purple core, faint orange hint
+  vec3 edge   = mix(vec3(0.0, 0.78, 0.18), vec3(0.0, 0.60, 0.65), dc);
+  vec3 core   = mix(vec3(0.08, 0.22, 0.92), vec3(0.48, 0.06, 0.84), fbm3(uv * 4.0 + t * 0.08));
+  // Faint warm tint at very center (matches reference image)
+  core = mix(core, vec3(0.75, 0.28, 0.0), smoothstep(0.06, 0.0, dc) * 0.18);
+  return mix(core, edge, smoothstep(0.12, 0.42, dc));
+}
+
+vec3 colTurbulent(vec2 uv, float dc, float t) {
+  float n1 = fbm4(uv * 7.0 + t * 0.45);
+  float n2 = fbm3(uv * 12.0 - t * 0.28);
+  vec3  c  = mix(vec3(1.0, 0.38, 0.0), vec3(0.88, 0.04, 0.0), n1);
+  c = mix(c, vec3(1.0, 0.88, 0.0), n2 * 0.38);
+  // Searing white-hot core
+  c = mix(c, vec3(1.0, 0.96, 0.85), smoothstep(0.08, 0.0, dc) * 0.55);
+  return c;
+}
+
+vec3 colMelancholic(vec2 uv, float dc, float t) {
+  float n = fbm4(uv * 4.5 + t * 0.07);
+  vec3 deep   = vec3(0.22, 0.05, 0.42);
+  vec3 grey   = vec3(0.11, 0.11, 0.16);
+  vec3 coldB  = vec3(0.05, 0.10, 0.32);
+  vec3 c = mix(deep, grey, n);
+  c = mix(c, coldB, smoothstep(0.3, 0.0, dc) * 0.6);
+  // Bioluminescent shimmer ghost
+  c += vec3(0.0, 0.04, 0.12) * fbm3(uv * 16.0 + t * 0.18);
+  return c;
+}
+
+vec3 colJoyful(vec2 uv, float dc, float t) {
+  float n1 = fbm4(uv * 8.0 + t * 0.55);
+  float n2 = fbm3(uv * 5.5 - t * 0.28);
+  vec3 gold   = vec3(1.0, 0.82, 0.0);
+  vec3 orange = vec3(1.0, 0.52, 0.05);
+  vec3 bright = vec3(1.0, 1.0, 0.62);
+  vec3 c = mix(gold, orange, n1);
+  c = mix(c, bright, n2 * 0.32);
+  // Radiance from hand position (upper center)
+  float glow = smoothstep(0.38, 0.0, length(uv - vec2(0.5, 0.33)));
+  c = mix(c, vec3(1.0, 1.0, 0.9), glow * 0.48);
+  return c;
+}
+
+vec3 colFragmented(vec2 uv, float dc, float t) {
+  float n1 = fbm4(uv * 17.0 + t * 1.4);
+  float n2 = fbm3(uv * 11.0 - t * 0.75);
+  float n3 = fbm3(uv * 22.0 + t * 2.1);
+  vec3 toxic   = vec3(0.08, 0.88, 0.08);
+  vec3 crimson = vec3(0.72, 0.02, 0.08);
+  vec3 void_   = vec3(0.06, 0.06, 0.09);
+  vec3 bio     = vec3(0.0, 0.38, 0.98);
+  vec3 c = mix(toxic, crimson, n1);
+  c = mix(c, void_, n2 * 0.45);
+  c = mix(c, bio,   n3 * 0.28);
+  // Horizontal glitch bands
+  float band = step(0.965, fract(uv.y * 38.0 + t * 3.2));
+  c = mix(c, vec3(1.0), band * 0.45);
+  return c;
+}
+
+vec3 blendEmotion(vec2 uv, float dc, float t, float emotion) {
+  float e = clamp(emotion, 0.0, 4.0);
+  float ef = fract(e);
+  int   ei = int(floor(e));
+
+  vec3 a, b;
+  if      (ei == 0) { a = colCalm(uv, dc, t);       b = colTurbulent(uv, dc, t); }
+  else if (ei == 1) { a = colTurbulent(uv, dc, t);  b = colMelancholic(uv, dc, t); }
+  else if (ei == 2) { a = colMelancholic(uv, dc, t);b = colJoyful(uv, dc, t); }
+  else if (ei == 3) { a = colJoyful(uv, dc, t);     b = colFragmented(uv, dc, t); }
+  else              { a = colFragmented(uv, dc, t);  b = a; }
+
+  return mix(a, b, ef);
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+void main() {
+  vec2  fc      = gl_FragCoord.xy;
+  vec2  uv      = fc / u_res;
+  float t       = u_time;
+  float aspect  = u_res.x / u_res.y;
+
+  // ─ Grid cell ───────────────────────────────────────────────────────────────
+  const float G = 5.0; // pixel grid spacing — dense micro-particle grid
+  vec2  cell   = floor(fc / G);
+  vec2  cCtr   = (cell + 0.5) * G;
+  vec2  cUV    = cCtr / u_res;
+
+  // ─ Micro-drift: organic cellular motion ────────────────────────────────────
+  float ph = hash(cell);                         // unique phase per particle
+  float spd = 0.12 + ph * 0.09;
+
+  // Emotion amplifies drift energy
+  float e = u_emotion;
+  float driftScale;
+  if      (e < 1.0) driftScale = mix(0.28, 0.95, e);
+  else if (e < 2.0) driftScale = mix(0.95, 0.18, e - 1.0);
+  else if (e < 3.0) driftScale = mix(0.18, 0.72, e - 2.0);
+  else              driftScale = mix(0.72, 1.0,   e - 3.0);
+
+  float driftAmt = G * 0.32 * driftScale;
+
+  // Two-frequency drift for organic feel
+  vec2 seed = cell * vec2(0.073, 0.091);
+  float dx = fbm3(seed + vec2(0.0, 43.1) + t * spd) - 0.5;
+  float dy = fbm3(seed + vec2(73.3, 0.0) + t * spd) - 0.5;
+  vec2 drift = normalize(vec2(dx, dy) + vec2(0.001)) * driftAmt;
+
+  // Additional turbulence swirl when turbulent
+  if (u_emotion > 0.5 && u_emotion < 1.5) {
+    float sw = (u_emotion < 1.0) ? u_emotion - 0.5 : 1.5 - u_emotion;
+    sw = sw * 2.0; // 0..1
+    vec2 swirl = vec2(-dy, dx) * sw * 0.4;
+    drift += swirl;
+  }
+
+  // Mouse repulsion
+  vec2  mPx     = u_mouse * u_res;
+  float mDist   = length(fc - mPx);
+  float mPush   = smoothstep(90.0, 0.0, mDist) * u_interact;
+  drift += normalize(fc - mPx + 0.001) * mPush * 18.0;
+
+  vec2 pPos = cCtr + drift;
+
+  // ─ Particle radius with shimmer ─────────────────────────────────────────────
+  float baseR  = G * 0.4;
+  float shimmer = 0.86 + 0.14 * sin(t * (2.5 + ph * 4.5) + ph * 6.28);
+  // Turbulence pulse
+  float tPulse = (u_emotion > 0.4 && u_emotion < 1.6)
+    ? 1.0 + 0.28 * sin(t * 9.0 + ph * 6.28) * smoothstep(0.4, 1.0, min(u_emotion, 2.0 - u_emotion))
+    : 1.0;
+  float radius = baseR * shimmer * tPulse;
+
+  // Distance from this fragment to its particle center
+  float dist = length(fc - pPos);
+  if (dist > radius) { fragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+
+  // ─ Base color ───────────────────────────────────────────────────────────────
+  float dc  = length(cUV - 0.5) * 1.414; // 0..1 from center to corner
+  vec3  col = blendEmotion(cUV, dc, t, u_emotion);
+
+  // ─ Pareidolia overlay ────────────────────────────────────────────────────────
+  float sdFace = sadFace(cUV, aspect);
+  float sdHand = joyfulHand(cUV, aspect);
+  float sdEye  = fragmentedEye(cUV, aspect);
+
+  float pp = u_par_phase;       // 0..3 smooth
+  float ps = u_par_str;         // 0..1 overall strength
+
+  // Which shape and color we're showing
+  float parDens;
+  vec3  parCol;
+
+  vec3 sadC  = vec3(0.45, 0.08, 0.72);  // deep purple
+  vec3 handC = vec3(1.0,  0.80, 0.02);  // gold
+  vec3 eyeC  = vec3(0.0,  0.65, 0.50);  // teal/green
+
+  if (pp < 1.0) {
+    parDens = mix(sdFace, sdHand, pp);
+    parCol  = mix(sadC, handC, pp);
+  } else if (pp < 2.0) {
+    parDens = mix(sdHand, sdEye, pp - 1.0);
+    parCol  = mix(handC, eyeC, pp - 1.0);
+  } else {
+    parDens = mix(sdEye, sdFace, pp - 2.0);
+    parCol  = mix(eyeC, sadC, pp - 2.0);
+  }
+
+  col = mix(col, parCol, parDens * ps * 0.72);
+
+  // ─ Glow & falloff ──────────────────────────────────────────────────────────
+  float glow = pow(1.0 - smoothstep(0.0, radius, dist), 1.8);
+  glow *= 1.0 + parDens * ps * 0.45;  // pareidolia particles glow brighter
+
+  // Inner core highlight
+  float core = smoothstep(radius * 0.45, 0.0, dist);
+  col = col * glow + col * core * 0.38;
+
+  // ─ Bioluminescent shimmer per-particle ────────────────────────────────────
+  float bio = 0.82 + 0.18 * sin(t * (2.2 + ph * 4.8) + hash(cell + 1.0) * 6.28);
+  col *= bio;
+
+  // ─ Random glints — rare bright sparks ─────────────────────────────────────
+  float glintHash = hash(cell + floor(t * 1.5) * vec2(0.13, 0.21));
+  if (glintHash > 0.987) {
+    float age = fract(t * 1.5);
+    float gf  = sin(age * 3.14159);
+    col += vec3(0.7, 0.75, 1.0) * gf * 0.9;
+  }
+
+  fragColor = vec4(col, 1.0);
+}
+`;
+
+// ─── Compile & Link ───────────────────────────────────────────────────────────
+function shader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(s));
+    throw new Error('Shader error');
+  }
+  return s;
+}
+
+function program(vsSrc, fsSrc) {
+  const p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER,   vsSrc));
+  gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fsSrc));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(p));
+    throw new Error('Link error');
+  }
+  return p;
+}
+
+const prog = program(VS, FS);
+gl.useProgram(prog);
+
+// Fullscreen quad
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+// Uniforms
+const U = {};
+['u_time','u_res','u_mouse','u_emotion','u_par_phase','u_par_str','u_interact'].forEach(
+  n => U[n] = gl.getUniformLocation(prog, n)
+);
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let targetEmotion  = 0;
+let currentEmotion = 0;
+let mouse          = [0.5, 0.5];
+let mouseActive    = false;
+let parPhase       = 0;
+let parStr         = 0;
+let parTimer       = 0;
+
+// ─── UI ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('#ui button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#ui button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    targetEmotion = +btn.dataset.e;
+    initAudio();                     // safe no-op if already running
+    switchAudioState(targetEmotion); // immediate crossfade
+  });
+});
+
+// ─── Mouse / Touch ────────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  mouse[0] = e.clientX / window.innerWidth;
+  mouse[1] = 1.0 - e.clientY / window.innerHeight;
+  mouseActive = true;
+});
+canvas.addEventListener('mouseleave', () => { mouseActive = false; });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  mouse[0] = t.clientX / window.innerWidth;
+  mouse[1] = 1.0 - t.clientY / window.innerHeight;
+  mouseActive = true;
+}, { passive: false });
+canvas.addEventListener('touchend', () => { mouseActive = false; });
+
+// ─── Audio Engine — Interstellar / Hans Zimmer Style ─────────────────────────
+//
+//  CALM        → Day One          : D minor, minimalist organ, cosmic vastness
+//  TURBULENT   → No Time for Caution : Shepherd/Risset rising tone, relentless build
+//  MELANCHOLIC → Stay             : Low Am, descending grief motif, heartbeat pulse
+//  JOYFUL      → Cornfield Chase  : D major, brisk hopeful arpeggios, pastoral warmth
+//  FRAGMENTED  → Mountains        : Metronomic clock ticks + sustained C major organ
+
+const hint = document.getElementById('audio-hint');
+let A = null; // global audio state
+
+// ── Pipe organ harmonic series ─────────────────────────────────────────────────
+// Each pipe rank adds a sine partial at a harmonic multiple
+const ORGAN_H = [
+  { m: 1, g: 1.00 }, // 8'  principal — fundamental
+  { m: 2, g: 0.62 }, // 4'  octave
+  { m: 3, g: 0.38 }, // 2⅔' quint
+  { m: 4, g: 0.26 }, // 2'  super-octave
+  { m: 6, g: 0.14 }, // 1⅓' larigot
+  { m: 8, g: 0.09 }, // 1'  piccolo
+];
+
+// Build a sustained organ note; returns master GainNode (control its .gain for mute/swell)
+function organNote(ctx, freq, dest, vol = 1.0) {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(dest);
+  ORGAN_H.forEach(({ m, g }) => {
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = freq * m;
+    const gn = ctx.createGain();
+    gn.gain.value = g;
+    o.connect(gn);
+    gn.connect(master);
+    o.start();
+  });
+  return master;
+}
+
+// Single organ attack-decay transient (for stabs, ticks, heartbeats)
+function organBurst(ctx, freq, dest, vol, attackS, decayS, harmonics = 4) {
+  const t = ctx.currentTime;
+  ORGAN_H.slice(0, harmonics).forEach(({ m, g }) => {
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = freq * m;
+    const gn = ctx.createGain();
+    gn.gain.setValueAtTime(0, t);
+    gn.gain.linearRampToValueAtTime(g * vol, t + attackS);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + attackS + decayS);
+    o.connect(gn);
+    gn.connect(dest);
+    o.start(t);
+    o.stop(t + attackS + decayS + 0.05);
+  });
+}
+
+// Convolution reverb: exponential-decay white noise impulse
+function makeReverb(ctx, durationS = 5.0, decay = 2.6) {
+  const len = Math.floor(ctx.sampleRate * durationS);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++)
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  const conv = ctx.createConvolver();
+  conv.buffer = buf;
+  return conv;
+}
+
+// Melodic look-ahead sequencer (loops notes[], organs each pitch into dest)
+function makeMelodySeq(ctx, notes, dest, vol = 0.12, overlapS = 0.9) {
+  let idx = 0;
+  let nextTime = ctx.currentTime + 0.8;
+  let alive = true;
+
+  function schedule() {
+    if (!alive) return;
+    const LOOKAHEAD = 0.6;
+    while (nextTime < ctx.currentTime + LOOKAHEAD) {
+      const note = notes[idx % notes.length]; idx++;
+      const t   = nextTime;
+      const dur = note.dur;
+      const fi  = Math.min(0.9, dur * 0.13);
+      const fo  = Math.min(1.1, dur * 0.20);
+      ORGAN_H.forEach(({ m, g }) => {
+        const o  = ctx.createOscillator();
+        o.type = 'sine';
+        o.frequency.value = note.freq * m;
+        const gn = ctx.createGain();
+        gn.gain.setValueAtTime(0, t);
+        gn.gain.linearRampToValueAtTime(g * vol, t + fi);
+        gn.gain.setValueAtTime(g * vol, t + dur - fo);
+        gn.gain.linearRampToValueAtTime(0, t + dur + fo * 0.4);
+        o.connect(gn); gn.connect(dest);
+        o.start(t);
+        o.stop(t + dur + fo + 0.1);
+      });
+      nextTime += dur - overlapS;
+    }
+    setTimeout(schedule, 80);
+  }
+  schedule();
+  return { stop() { alive = false; } };
+}
+
+// ── CALM — Day One ─────────────────────────────────────────────────────────────
+// D minor, lonely yet cosmic. Sparse melody descends like starlight dimming.
+function buildCalm(ctx, dest) {
+  // Low D-A open fifth drone — the quiet hum of interstellar space
+  organNote(ctx, 73.42,  dest, 0.36); // D2
+  organNote(ctx, 110.00, dest, 0.24); // A2
+  organNote(ctx, 146.83, dest, 0.16); // D3
+  organNote(ctx, 220.00, dest, 0.09); // A3
+
+  // Sparse melody: five notes, each held 8-10 seconds, very legato
+  // D4 → C4 → Bb3 → A3 → G3 → (repeat) — a descending cosmic exhale
+  const melody = [
+    { freq: 293.66, dur: 9  }, // D4
+    { freq: 261.63, dur: 8  }, // C4
+    { freq: 233.08, dur: 8  }, // Bb3
+    { freq: 220.00, dur: 9  }, // A3
+    { freq: 196.00, dur: 11 }, // G3 — lingers longest, resolves into silence
+  ];
+  return makeMelodySeq(ctx, melody, dest, 0.10, 1.2);
+}
+
+// ── TURBULENT — No Time for Caution ───────────────────────────────────────────
+// Shepherd/Risset endlessly-rising tone: the illusion of eternal escalation.
+// Six sine waves spaced one octave apart, all rising; bell-curve amplitude
+// means extremes fade as new ones rise from below — pitch never peaks.
+function buildTurbulent(ctx, dest) {
+  // Low C-minor organ bed — foundation of dread
+  [65.41, 77.78, 98.00, 130.81, 155.56, 196.00].forEach(f =>
+    organNote(ctx, f, dest, 0.14)
+  );
+
+  // Shepherd oscillators: A0–A5, will be frequency-updated every frame
+  const shepOscs = [27.5, 55.0, 110.0, 220.0, 440.0, 880.0].map(freq => {
+    const o  = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    const gn = ctx.createGain();
+    gn.gain.value = 0; // controlled by updateShepherd() each frame
+    o.connect(gn);
+    gn.connect(dest);
+    o.start();
+    return { osc: o, gn, freq };
+  });
+
+  return { shepOscs };
+}
+
+// ── MELANCHOLIC — Stay ─────────────────────────────────────────────────────────
+// A minor, low register, Cooper's heartbreak. Descending motif = helplessness.
+function buildMelancholic(ctx, dest) {
+  // Am chord: A1-E2-A2-C3-E3 — heavy, immovable grief
+  [
+    { f: 55.00,  v: 0.40 },
+    { f: 82.41,  v: 0.26 },
+    { f: 110.00, v: 0.30 },
+    { f: 130.81, v: 0.16 },
+    { f: 164.81, v: 0.10 },
+  ].forEach(({ f, v }) => organNote(ctx, f, dest, v));
+
+  // Heartbeat: a paired low pulse at ~43 BPM (grief slows the heart)
+  let hbOn = true;
+  function beat() {
+    if (!hbOn) return;
+    organBurst(ctx, 55.00, dest, 0.22, 0.012, 0.14, 3); // lub
+    setTimeout(() => {
+      if (hbOn) organBurst(ctx, 55.00, dest, 0.13, 0.010, 0.09, 2); // dub
+    }, 240);
+    setTimeout(beat, 1400);
+  }
+  beat();
+
+  // Descending melody: A3-G3-F3-E3 — the notes fall and never quite recover
+  const melody = [
+    { freq: 220.00, dur: 7  }, // A3
+    { freq: 196.00, dur: 6  }, // G3
+    { freq: 174.61, dur: 6  }, // F3
+    { freq: 164.81, dur: 10 }, // E3 — long, suspended in grief
+    { freq: 174.61, dur: 5  }, // F3 — tries to rise...
+    { freq: 196.00, dur: 6  }, // G3 — ...but falls again
+  ];
+  const seq = makeMelodySeq(ctx, melody, dest, 0.09, 1.4);
+  return { stop() { hbOn = false; seq.stop(); } };
+}
+
+// ── JOYFUL — Cornfield Chase ───────────────────────────────────────────────────
+// D major, 6/8 pastoral feel. Cooper running through the field with his kids.
+// Notes are shorter, brighter, arpeggiated — the only state with rhythmic motion.
+function buildJoyful(ctx, dest) {
+  // Pedal D: warm bass foundation
+  organNote(ctx, 73.42,  dest, 0.28); // D2
+  organNote(ctx, 110.00, dest, 0.18); // A2
+
+  // Arpeggiated D major figure at ~112 BPM (each step ≈ 0.27 s)
+  const S = 0.27;
+  const arp = [
+    { freq: 293.66, dur: S * 1.5 }, // D4  — upbeat landing
+    { freq: 329.63, dur: S       }, // E4
+    { freq: 440.00, dur: S       }, // A4
+    { freq: 493.88, dur: S * 2.5 }, // B4  — peak, held
+    { freq: 440.00, dur: S       }, // A4
+    { freq: 370.00, dur: S       }, // F#4
+    { freq: 329.63, dur: S       }, // E4
+    { freq: 293.66, dur: S * 2   }, // D4  — breathe
+    { freq: 246.94, dur: S       }, // B3
+    { freq: 293.66, dur: S       }, // D4
+    { freq: 370.00, dur: S       }, // F#4
+    { freq: 440.00, dur: S * 3   }, // A4  — soar
+  ];
+  return makeMelodySeq(ctx, arp, dest, 0.13, 0.08);
+}
+
+// ── FRAGMENTED — Mountains ─────────────────────────────────────────────────────
+// Every 1.246 s a clock-tick fires. On Miller's planet: one tick = 17 Earth hours.
+// Each tick is the sound of time passing at an inhuman scale.
+function buildFragmented(ctx, dest) {
+  // C major organ backdrop: cold, vast, indifferent to time
+  [
+    { f: 65.41,  v: 0.26 }, // C2
+    { f: 98.00,  v: 0.20 }, // G2
+    { f: 130.81, v: 0.16 }, // C3
+    { f: 164.81, v: 0.10 }, // E3
+  ].forEach(({ f, v }) => organNote(ctx, f, dest, v));
+
+  // Metronomic tick — mechanical, inevitable
+  const INTERVAL = 1.246; // seconds; 17 Earth hours per tick
+  let tickOn = true;
+
+  function tick() {
+    if (!tickOn) return;
+    const t = ctx.currentTime;
+    // Primary click: square-wave burst filtered to sound mechanical
+    [880, 1320].forEach((freq, i) => {
+      const o   = ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.value = freq;
+      const bpf = ctx.createBiquadFilter();
+      bpf.type = 'bandpass';
+      bpf.frequency.value = freq;
+      bpf.Q.value = 4;
+      const gn  = ctx.createGain();
+      const tOff = t + i * 0.018;
+      gn.gain.setValueAtTime(0, tOff);
+      gn.gain.linearRampToValueAtTime(0.20 - i * 0.07, tOff + 0.002);
+      gn.gain.exponentialRampToValueAtTime(0.0001, tOff + 0.065);
+      o.connect(bpf); bpf.connect(gn); gn.connect(dest);
+      o.start(tOff); o.stop(tOff + 0.1);
+    });
+    setTimeout(tick, INTERVAL * 1000);
+  }
+  tick();
+
+  return { stop() { tickOn = false; } };
+}
+
+// ── Init & routing ─────────────────────────────────────────────────────────────
+function initAudio() {
+  if (A) return;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // iOS Safari creates AudioContext in 'suspended' state — must resume()
+  // inside the same user-gesture callback, otherwise no sound ever plays.
+  ctx.resume();
+
+  // Master output with slow fade-in
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, ctx.currentTime);
+  master.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 2.5);
+  master.connect(ctx.destination);
+
+  // Cathedral reverb — 3.5 s on mobile keeps init fast without sacrificing space
+  const reverb  = makeReverb(ctx, 3.5, 2.4);
+  const revSend = ctx.createGain();
+  revSend.gain.value = 0.42;
+  reverb.connect(revSend);
+  revSend.connect(master);
+
+  // Five per-state send buses (dry + wet)
+  const buses = Array.from({ length: 5 }, (_, i) => {
+    const dry = ctx.createGain(); dry.gain.value = i === 0 ? 1 : 0;
+    const wet = ctx.createGain(); wet.gain.value = i === 0 ? 1 : 0;
+    dry.connect(master);
+    wet.connect(reverb);
+    return { dry, wet };
+  });
+
+  // Each state's output feeds into both its dry and wet bus
+  function stateOut(i) {
+    const m = ctx.createGain(); m.gain.value = 1;
+    m.connect(buses[i].dry);
+    m.connect(buses[i].wet);
+    return m;
+  }
+
+  const turbData = buildTurbulent(ctx, stateOut(1));
+
+  A = {
+    ctx, master, buses,
+    shep: turbData.shepOscs,  // Shepherd oscillators updated each frame
+    activeState: 0,
+  };
+
+  buildCalm(ctx,        stateOut(0));
+  buildMelancholic(ctx, stateOut(2));
+  buildJoyful(ctx,      stateOut(3));
+  buildFragmented(ctx,  stateOut(4));
+
+  hint.style.opacity = '0';
+  setTimeout(() => hint.remove?.(), 2000);
+}
+
+// Crossfade between state buses over 1.2 s
+function switchAudioState(state) {
+  if (!A) return;
+  const t    = A.ctx.currentTime;
+  const FADE = 1.2;
+  A.buses.forEach((bus, i) => {
+    const v = i === state ? 1 : 0;
+    bus.dry.gain.setTargetAtTime(v, t, FADE / 4);
+    bus.wet.gain.setTargetAtTime(v, t, FADE / 4);
+  });
+  A.activeState = state;
+}
+
+// Called every frame from render loop; advances Shepherd tone frequencies
+function updateShepherd(dt) {
+  if (!A || !A.shep) return;
+  // Bell curve center: A2 = 110 Hz (log2 = ~6.78)
+  const CENTER_LOG2 = Math.log2(110);
+  // Rise rate: one octave in ~18 seconds → 2^(1/18) per second
+  const RISE = Math.pow(2, dt / 18);
+
+  A.shep.forEach(s => {
+    s.freq *= RISE;
+    if (s.freq > 880) s.freq /= 2; // wrap: A5 → A4, seamless
+    s.osc.frequency.setValueAtTime(s.freq, A.ctx.currentTime);
+
+    // Gaussian gain: loudest at A2, silent at extremes
+    const logD = Math.abs(Math.log2(s.freq) - CENTER_LOG2);
+    const bell = Math.exp(-logD * logD * 0.65) * 0.38;
+    s.gn.gain.setTargetAtTime(bell, A.ctx.currentTime, 0.08);
+  });
+}
+
+document.addEventListener('click',      initAudio, { once: true });
+document.addEventListener('touchstart', initAudio, { once: true });
+document.addEventListener('touchend',   initAudio, { once: true }); // iOS fallback
+
+// ─── Pareidolia Timing ────────────────────────────────────────────────────────
+// 30s cycle: fade-in (2s) → hold (5s) → cross (2s) → hold (5s) → cross (2s) → hold (5s) → fade-out (2s) → dark (7s)
+function updatePareidolia(dt) {
+  parTimer += dt;
+  const C = 30.0;
+  const ph = (parTimer % C) / C;
+
+  // Breakpoints (normalized)
+  const t0 = 0.000; // start fade in shape 0
+  const t1 = 0.067; // end fade in (2s / 30s)
+  const t2 = 0.233; // end hold shape 0 (5s)
+  const t3 = 0.300; // end cross 0→1 (2s)
+  const t4 = 0.467; // end hold shape 1 (5s)
+  const t5 = 0.533; // end cross 1→2 (2s)
+  const t6 = 0.700; // end hold shape 2 (5s)
+  const t7 = 0.767; // end fade out (2s)
+  // t7..1.0 = dark (7s)
+
+  let str = 0.0;
+  let phase = 0.0;
+
+  if (ph < t1) {
+    str   = (ph - t0) / (t1 - t0);
+    phase = 0.0;
+  } else if (ph < t2) {
+    str   = 1.0;
+    phase = 0.0;
+  } else if (ph < t3) {
+    str   = 1.0;
+    phase = (ph - t2) / (t3 - t2);
+  } else if (ph < t4) {
+    str   = 1.0;
+    phase = 1.0;
+  } else if (ph < t5) {
+    str   = 1.0;
+    phase = 1.0 + (ph - t4) / (t5 - t4);
+  } else if (ph < t6) {
+    str   = 1.0;
+    phase = 2.0;
+  } else if (ph < t7) {
+    str   = 1.0 - (ph - t6) / (t7 - t6);
+    phase = 2.0;
+  } else {
+    str   = 0.0;
+    phase = 0.0;
+  }
+
+  parPhase = phase;
+  parStr   = str * 0.52;  // max ~52% to keep ghostly / subtle
+}
+
+// ─── Render Loop ──────────────────────────────────────────────────────────────
+let prev = 0;
+function render(ts) {
+  const dt = Math.min((ts - prev) * 0.001, 0.05);
+  prev = ts;
+
+  // Smooth emotion transition
+  const speed = 0.45;
+  if (Math.abs(currentEmotion - targetEmotion) < 0.001) {
+    currentEmotion = targetEmotion;
+  } else {
+    currentEmotion += (targetEmotion - currentEmotion) * Math.min(dt * speed, 1.0);
+  }
+
+  updatePareidolia(dt);
+  updateShepherd(dt);
+
+  gl.uniform1f(U['u_time'],      ts * 0.001);
+  gl.uniform2f(U['u_res'],       canvas.width, canvas.height);
+  gl.uniform2f(U['u_mouse'],     mouse[0], mouse[1]);
+  gl.uniform1f(U['u_emotion'],   currentEmotion);
+  gl.uniform1f(U['u_par_phase'], parPhase);
+  gl.uniform1f(U['u_par_str'],   parStr);
+  gl.uniform1f(U['u_interact'],  mouseActive ? 1.0 : 0.0);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
