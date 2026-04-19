@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotional E-Reader · HP OotP Ch.33</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Cinzel:wght@400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-deep:   #0c0c10;
+  --bg-panel:  #111118;
+  --bg-page:   #14121c;
+  --bg-card:   #1a1825;
+  --bg-hover:  #221f30;
+  --ink:       #e4dccf;
+  --ink-mid:   #a89f92;
+  --ink-dim:   #5a5468;
+  --ink-ghost: #2e2a3a;
+
+  /* NRC emotion palette */
+  --c-anger:       #c0392b;
+  --c-anger-bg:    rgba(192,57,43,0.15);
+  --c-anger-hl:    rgba(192,57,43,0.25);
+  --c-fear:        #7d3c98;
+  --c-fear-bg:     rgba(125,60,152,0.13);
+  --c-fear-hl:     rgba(125,60,152,0.22);
+  --c-disgust:     #6e2f8a;
+  --c-disgust-bg:  rgba(110,47,138,0.13);
+  --c-disgust-hl:  rgba(110,47,138,0.22);
+  --c-sadness:     #2e6da4;
+  --c-sadness-bg:  rgba(46,109,164,0.13);
+  --c-anticipation:#c87a1a;
+  --c-surprise:    #c87a1a;
+  --c-joy:         #1e7e44;
+  --c-trust:       #1e7e44;
+
+  --border:    rgba(255,255,255,0.06);
+  --serif:     'EB Garamond', Georgia, serif;
+  --display:   'Cinzel', serif;
+  --mono:      'JetBrains Mono', monospace;
+}
+
+html, body { height: 100%; background: var(--bg-deep); color: var(--ink); font-family: var(--serif); overflow: hidden; }
+
+/* ── Shell ── */
+.shell {
+  display: grid;
+  grid-template-columns: 1fr 288px;
+  grid-template-rows: 52px 1fr 44px;
+  height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+  grid-column: 1/-1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+.tb-left { display: flex; align-items: center; gap: 14px; }
+.badge {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .18em;
+  color: var(--c-anger); background: var(--c-anger-bg);
+  border: 1px solid rgba(192,57,43,0.35);
+  padding: 3px 9px; border-radius: 2px;
+}
+.book-title { font-family: var(--display); font-size: 12px; letter-spacing: .04em; }
+.chapter-tag { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); letter-spacing: .08em; }
+.tb-right { display: flex; align-items: center; gap: 10px; }
+
+.toggle-btn {
+  background: none; border: 1px solid var(--border);
+  color: var(--ink-mid); font-family: var(--mono); font-size: 10px;
+  letter-spacing: .06em; padding: 4px 12px; border-radius: 20px; cursor: pointer;
+  transition: all .2s;
+}
+.toggle-btn:hover { border-color: var(--c-anger); color: var(--c-anger); }
+.toggle-btn.on { border-color: var(--c-anger); color: var(--c-anger); background: var(--c-anger-bg); }
+
+/* ── Reader pane ── */
+.reader {
+  overflow-y: auto; padding: 40px 52px 60px;
+  background: var(--bg-page); position: relative;
+}
+.reader::-webkit-scrollbar { width: 3px; }
+.reader::-webkit-scrollbar-thumb { background: var(--ink-ghost); border-radius: 2px; }
+
+/* Top flame line */
+.reader::before {
+  content: ''; position: sticky; top: 0; left: 0;
+  display: block; height: 2px; width: 100%;
+  background: linear-gradient(90deg, var(--c-anger) 0%, rgba(192,57,43,.3) 70%, transparent 100%);
+  margin-bottom: 0;
+}
+
+.ch-eyebrow { font-family: var(--display); font-size: 9px; letter-spacing: .3em; color: var(--c-anger); margin: 16px 0 6px; }
+.ch-title   { font-family: var(--display); font-size: 22px; font-weight: 400; letter-spacing: .06em; color: var(--ink); margin-bottom: 4px; }
+.ch-meta    { font-family: var(--mono); font-size: 9px; color: var(--ink-dim); letter-spacing: .1em; margin-bottom: 28px; }
+
+/* Tension arc bar */
+.arc-wrap { margin: 0 0 28px; }
+.arc-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; color: var(--ink-dim); letter-spacing: .08em; margin-bottom: 5px; }
+.arc-track { height: 3px; background: var(--ink-ghost); border-radius: 2px; overflow: hidden; }
+.arc-fill  { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #6b1a14, #c0392b, #e74c3c); width: 0; transition: width 1.4s cubic-bezier(.4,0,.2,1); }
+
+/* Scene block */
+.scene { max-width: 600px; margin-bottom: 0; }
+.scene-head {
+  display: flex; align-items: center; gap: 10px; margin: 28px 0 10px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: var(--ink-dim);
+}
+.scene-head::before, .scene-head::after { content:''; flex:1; height:1px; background: var(--ink-ghost); }
+.scene-head.anger-peak::before, .scene-head.anger-peak::after { background: rgba(192,57,43,.3); }
+.scene-head.anger-peak { color: var(--c-anger); }
+
+/* Prose */
+.prose { font-size: 17px; line-height: 1.9; color: var(--ink); }
+.prose p { margin-bottom: 1.5em; }
+
+/* emotion word spans */
+.ew { position: relative; border-radius: 2px; cursor: default; transition: background .2s; }
+.ew[data-e="anger"]   { border-bottom: 1.5px solid rgba(192,57,43,.45); }
+.ew[data-e="fear"]    { border-bottom: 1.5px solid rgba(125,60,152,.45); }
+.ew[data-e="disgust"] { border-bottom: 1.5px solid rgba(110,47,138,.45); }
+.ew[data-e="sadness"] { border-bottom: 1.5px solid rgba(46,109,164,.35); }
+.ew[data-e="multi"]   { border-bottom: 1.5px dotted rgba(200,122,26,.5); }
+
+/* highlight mode */
+.hl-on .ew[data-e="anger"]   { background: var(--c-anger-hl); padding: 0 2px; }
+.hl-on .ew[data-e="fear"]    { background: var(--c-fear-hl);   padding: 0 2px; }
+.hl-on .ew[data-e="disgust"] { background: var(--c-disgust-hl);padding: 0 2px; }
+.hl-on .ew[data-e="multi"]   { background: rgba(200,122,26,.18);padding: 0 2px; }
+
+/* tooltips */
+.ew:hover .tip { display: block; }
+.tip {
+  display: none; position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%); z-index: 20;
+  background: var(--bg-card); border: 1px solid rgba(192,57,43,.4);
+  font-family: var(--mono); font-size: 9px; letter-spacing: .06em; color: var(--ink-mid);
+  padding: 5px 9px; border-radius: 3px; white-space: nowrap;
+  pointer-events: none;
+}
+.tip::after {
+  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 4px solid transparent; border-top-color: rgba(192,57,43,.4);
+}
+.tip .em-anger { color: #e57373; }
+.tip .em-fear  { color: #ce93d8; }
+.tip .em-disgust{ color: #b39ddb; }
+.tip .em-multi { color: var(--c-anticipation); }
+.tip .em-sadness{ color: #90caf9; }
+
+/* NRC annotation box */
+.nrc-note {
+  margin: 12px 0 20px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border-left: 2px solid var(--c-anger);
+  border-radius: 0 4px 4px 0;
+}
+.nrc-note-head { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: var(--c-anger); margin-bottom: 5px; }
+.nrc-note-body { font-size: 12.5px; line-height: 1.65; color: var(--ink-mid); font-style: italic; }
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--bg-panel); border-left: 1px solid var(--border);
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--ink-ghost); }
+
+.s-sec { padding: 16px; border-bottom: 1px solid var(--border); }
+.s-head { font-family: var(--display); font-size: 8.5px; letter-spacing: .2em; color: var(--ink-dim); margin-bottom: 12px; }
+
+/* Dominant card */
+.dom-card {
+  background: var(--c-anger-bg); border: 1px solid rgba(192,57,43,.3);
+  border-radius: 5px; padding: 12px;
+}
+.dom-name { font-family: var(--display); font-size: 16px; color: var(--c-anger); letter-spacing: .06em; margin-bottom: 2px; }
+.dom-sub  { font-family: var(--mono); font-size: 8px; letter-spacing: .1em; color: var(--ink-dim); margin-bottom: 8px; }
+.dom-desc { font-size: 11.5px; line-height: 1.6; color: var(--ink-mid); }
+
+/* Legend */
+.legend { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.leg-row { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 9px; color: var(--ink-mid); }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Emotion bars */
+.emo-bars { display: flex; flex-direction: column; gap: 7px; }
+.emo-row  { display: flex; flex-direction: column; gap: 3px; }
+.emo-lbl  { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; }
+.emo-name { color: var(--ink-dim); }
+.emo-pct  { color: var(--ink-dim); }
+.emo-name.hi, .emo-pct.hi { color: var(--c-anger); }
+.emo-track { height: 3px; background: var(--ink-ghost); border-radius: 2px; overflow: hidden; }
+.emo-fill  { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+/* Plutchik wheel */
+.wheel-wrap { display: flex; justify-content: center; }
+.wheel-wrap svg { width: 180px; height: 180px; }
+
+/* Word tags */
+.word-cloud { display: flex; flex-wrap: wrap; gap: 5px; }
+.wtag {
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: .05em;
+  padding: 2px 8px; border-radius: 20px; border: 1px solid;
+}
+.wtag.a { border-color: rgba(192,57,43,.5); color: #e57373; background: rgba(192,57,43,.08); }
+.wtag.f { border-color: rgba(125,60,152,.5); color: #ce93d8; background: rgba(125,60,152,.08); }
+.wtag.d { border-color: rgba(110,47,138,.5); color: #b39ddb; background: rgba(110,47,138,.08); }
+.wtag.m { border-color: rgba(200,122,26,.5); color: #ffb74d; background: rgba(200,122,26,.08); }
+
+/* ── Status bar ── */
+.statusbar {
+  grid-column: 1/-1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; background: var(--bg-panel); border-top: 1px solid var(--border);
+  font-family: var(--mono); font-size: 9px; color: var(--ink-dim); letter-spacing: .06em;
+}
+.pulse { width: 5px; height: 5px; border-radius: 50%; background: var(--c-anger); display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+.status-em span { color: var(--c-anger); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Topbar ── -->
+<header class="topbar">
+  <div class="tb-left">
+    <span class="badge">HP · OotP</span>
+    <span class="book-title">Harry Potter and the Order of the Phoenix</span>
+    <span class="chapter-tag">Ch.33 · Fight and Flight</span>
+  </div>
+  <div class="tb-right">
+    <button class="toggle-btn" id="hlBtn">Highlight Emotion Words</button>
+  </div>
+</header>
+
+<!-- ── Reading pane ── -->
+<main class="reader" id="reader">
+  <div class="ch-eyebrow">Chapter Thirty-Three</div>
+  <h1 class="ch-title">Fight and Flight</h1>
+  <div class="ch-meta">NRC Emotional Analysis · Dominant: ANGER · Plutchik's Wheel</div>
+
+  <!-- Scene tension arc -->
+  <div class="arc-wrap">
+    <div class="arc-label">
+      <span>Anger Tension Arc · Full Chapter</span>
+      <span id="arcPct">68%</span>
+    </div>
+    <div class="arc-track"><div class="arc-fill" id="arcFill"></div></div>
+  </div>
+
+  <div class="scene" id="proseRoot">
+
+    <!-- Scene 1 -->
+    <div class="scene-head">Scene 1 · Suppressed Anger</div>
+    <div class="prose">
+      <p>
+        Harry did not dare attempt to talk to her; Umbridge was walking so closely behind them that he could hear her
+        <span class="ew" data-e="fear"><span class="tip"><span class="em-fear">fear</span></span>ragged</span>
+        breathing.
+      </p>
+      <p>
+        "Yes," said Umbridge, whose
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span> · anticipation</span>excitement</span>
+        seemed to be mounting. "Yes, he would have done, of course, the great half-breed oaf. . . ."
+      </p>
+      <p>
+        She laughed. Harry felt a strong
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-fear">fear</span> · anticipation</span>urge</span>
+        to swing around and
+        <span class="ew" data-e="fear"><span class="tip"><span class="em-fear">fear</span></span>seize</span>
+        her by the throat, but resisted. His scar was
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>throbbing</span>
+        in the soft evening air.
+      </p>
+    </div>
+    <div class="nrc-note">
+      <div class="nrc-note-head">NRC · Scene 1</div>
+      <div class="nrc-note-body">「urge to seize her by the throat, but resisted」——情緒壓制機制（suppression）：urge 觸發多重情緒（anger + fear + anticipation），resist 顯示意志控制。NRC 詞典中 seize 標記 fear；此處展現 Gross 情緒調節的 response modulation 階段。</div>
+    </div>
+
+    <!-- Scene 2 -->
+    <div class="scene-head anger-peak">Scene 2 · Anger Peak — The Insult</div>
+    <div class="prose">
+      <p>
+        "'Near-human
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span> · sadness · surprise</span>intelligence</span>'?"
+        repeated Magorian, as Bane and several others
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>roared</span>
+        with
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>rage</span>
+        and pawed the ground.
+        "We consider that a great
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span> · sadness · surprise</span>insult</span>,
+        human! Our intelligence, thankfully, far outstrips your own—"
+      </p>
+      <p>
+        "What are you doing in our forest?" bellowed the hard-faced gray centaur.
+        "Why are you here?"
+      </p>
+      <p>
+        "*Your* forest?" said Umbridge, shaking now not only with
+        <span class="ew" data-e="fear"><span class="tip"><span class="em-fear">fear</span></span>fright</span>
+        but also, it seemed, with
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span></span>indignation</span>.
+      </p>
+    </div>
+    <div class="nrc-note">
+      <div class="nrc-note-head">NRC · Scene 2 · Anger Peak</div>
+      <div class="nrc-note-body">「insult」在 NRC 詞典同時標記 anger＋disgust＋sadness＋surprise，為本場景最高多情緒密度詞。「rage」純 anger；「roared」屬強度動詞，結合情境強化憤怒效果。此幕為第三十三章憤怒情緒密度峰值。</div>
+    </div>
+
+    <!-- Scene 3 -->
+    <div class="scene-head anger-peak">Scene 3 · Disgust + Anger Fusion</div>
+    <div class="prose">
+      <p>
+        "
+        <span class="ew" data-e="disgust"><span class="tip"><span class="em-disgust">disgust</span></span>Filthy</span>
+        half-breeds!" she
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span> · <span class="em-fear">fear</span> · surprise</span>screamed</span>,
+        her hands still tight over her head. "
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-fear">fear</span></span>Beasts</span>!
+        Uncontrolled animals!"
+      </p>
+      <p>
+        Ropes flew out of midair like thick snakes, wrapping themselves tightly around the centaur's torso and trapping his arms. He gave a cry of
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>rage</span>
+        and reared onto his hind legs, attempting to free himself, while the other centaurs
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>charged</span>.
+      </p>
+      <p>
+        "Nooooo!" he heard Umbridge
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span> · <span class="em-fear">fear</span> · surprise</span>shriek</span>.
+        "Noooooo . . . you cannot . . . unhand me, you
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-fear">fear</span></span>animals</span>
+        . . . nooooo!"
+      </p>
+    </div>
+    <div class="nrc-note">
+      <div class="nrc-note-head">NRC · Scene 3 · Disgust–Anger 融合</div>
+      <div class="nrc-note-body">「filthy」→ disgust；「screamed/shriek」→ anger＋disgust＋fear＋surprise（NRC 四項並存）。Plutchik 輪中 anger＋disgust 相鄰，融合為 contempt（輕蔑），與 Umbridge 對非人類種族的態度一致。</div>
+    </div>
+
+    <!-- Scene 4 -->
+    <div class="scene-head">Scene 4 · Released Anger</div>
+    <div class="prose">
+      <p>
+        Not only had Harry managed to lose his wand but they were stuck in the middle of the Forbidden Forest with no means of transport whatsoever.
+        "Smart plan," he
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span></span>spat</span>
+        at Hermione, keen to release some of his
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>fury</span>.
+        "Really smart plan. Where do we go from here?"
+      </p>
+      <p>
+        "By the time we've done that, Sirius'll probably be dead!" said Harry, kicking a nearby tree in
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span></span>temper</span>;
+        there was a high-pitched chattering overhead as an angry bowtruckle flexed its long twiglike fingers at him.
+      </p>
+    </div>
+    <div class="nrc-note">
+      <div class="nrc-note-head">NRC · Scene 4 · 情緒釋放</div>
+      <div class="nrc-note-body">「fury」標記 anger＋fear＋sadness（NRC 三項）；「spat」→ anger＋disgust。Harry 從壓抑（Scene 1）到此刻外顯發洩，對應 Gross 情緒調節模型 expressive suppression → release 的完整弧線。</div>
+    </div>
+
+    <!-- Scene 5 -->
+    <div class="scene-head">Scene 5 · Centaur Pride-Anger</div>
+    <div class="prose">
+      <p>
+        "We do not help humans!"
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span></span>snarled</span>
+        the centaur holding Harry, tightening his grip and rearing a little at the same time.
+        "We are a race apart and
+        <span class="ew" data-e="multi"><span class="tip">anticipation · joy · <span class="em-anger">trust</span></span>proud</span>
+        to be so. . . . We will not permit you to walk from here,
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span></span>boasting</span>
+        that we did your bidding!"
+      </p>
+      <p>
+        "We are not all like the
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>traitor</span>
+        Firenze, human girl!" shouted the gray centaur, to more neighing roars of approval from his fellows. "We are an ancient people who will not stand wizard
+        <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">anger</span></span>invasions</span>
+        and
+        <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">anger</span> · <span class="em-disgust">disgust</span> · sadness · surprise</span>insults</span>!"
+      </p>
+    </div>
+    <div class="nrc-note">
+      <div class="nrc-note-head">NRC · Scene 5 · 驕傲–憤怒複合</div>
+      <div class="nrc-note-body">「proud」標記 anticipation＋joy＋trust，而「snarled」與「boasting」標記 anger＋disgust——展示 Plutchik 輪中情緒的共存：驕傲與憤怒相鄰，形成防衛性憤怒（defensive anger）的典型語用模式。</div>
+    </div>
+
+  </div><!-- /scene -->
+  <div style="height:40px"></div>
+</main>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+
+  <div class="s-sec">
+    <div class="s-head">Dominant Emotion</div>
+    <div class="dom-card">
+      <div class="dom-name">Anger</div>
+      <div class="dom-sub">NRC Lexicon · Mohammad &amp; Turney 2013</div>
+      <div class="dom-desc">壓抑的憤怒貫穿全章，從 Harry 的內化克制到 Umbridge 的爆發式宣洩，再到 Harry 最終對 Hermione 的語言釋放。</div>
+    </div>
+  </div>
+
+  <!-- Color legend -->
+  <div class="s-sec">
+    <div class="s-head">Highlight Legend</div>
+    <div class="legend">
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-anger)"></div><span style="color:#e57373">Anger</span></div>
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-fear)"></div><span style="color:#ce93d8">Fear</span></div>
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-disgust)"></div><span style="color:#b39ddb">Disgust</span></div>
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-anticipation)"></div><span style="color:#ffb74d">Multi-emotion</span></div>
+    </div>
+  </div>
+
+  <!-- NRC 8-emotion bars -->
+  <div class="s-sec">
+    <div class="s-head">NRC 八大情緒分布 · Ch.33</div>
+    <div class="emo-bars">
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name hi">Anger</span><span class="emo-pct hi">68%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="68" style="background:var(--c-anger)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">Fear</span><span class="emo-pct">62%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="62" style="background:var(--c-fear)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">Disgust</span><span class="emo-pct">48%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="48" style="background:#6e2f8a"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">Sadness</span><span class="emo-pct">32%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="32" style="background:var(--c-sadness)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">Surprise</span><span class="emo-pct">28%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="28" style="background:#8e7444"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">Anticipation</span><span class="emo-pct">22%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="22" style="background:var(--c-anticipation)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">Trust</span><span class="emo-pct">10%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="10" style="background:#2e7d52"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">Joy</span><span class="emo-pct">8%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="8" style="background:#1e7e44"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plutchik mini wheel -->
+  <div class="s-sec">
+    <div class="s-head">Plutchik's Wheel · 情緒映射</div>
+    <div class="wheel-wrap">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(100,100)">
+          <!-- Petals (8 octants) -->
+          <!-- Anger - top, highlighted -->
+          <path d="M0,0 L-26,-76 A80,80 0 0,1 26,-76 Z" fill="#c0392b" opacity="0.92"/>
+          <!-- Fear - top-right -->
+          <path d="M0,0 L50,-63 A80,80 0 0,1 76,-26 Z" fill="#7d3c98" opacity="0.6"/>
+          <!-- Surprise - right -->
+          <path d="M0,0 L76,-26 A80,80 0 0,1 76,26 Z" fill="#a0782a" opacity="0.45"/>
+          <!-- Trust - bottom-right -->
+          <path d="M0,0 L50,63 A80,80 0 0,1 26,76 Z" fill="#1e7e44" opacity="0.38"/>
+          <!-- Joy - bottom -->
+          <path d="M0,0 L26,76 A80,80 0 0,1 -26,76 Z" fill="#1a5c8a" opacity="0.32"/>
+          <!-- Sadness - bottom-left -->
+          <path d="M0,0 L-50,63 A80,80 0 0,1 -76,26 Z" fill="#2e6da4" opacity="0.42"/>
+          <!-- Disgust - left -->
+          <path d="M0,0 L-76,26 A80,80 0 0,1 -76,-26 Z" fill="#6e2f8a" opacity="0.6"/>
+          <!-- Anticipation - top-left -->
+          <path d="M0,0 L-50,-63 A80,80 0 0,1 -26,-76 Z" fill="#c87a1a" opacity="0.42"/>
+
+          <!-- rings -->
+          <circle r="32" fill="#14121c" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <circle r="80" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+          <!-- Anger label bright -->
+          <text x="0" y="-45" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#f1948a" font-weight="400" letter-spacing="0.04em">ANGER</text>
+          <!-- Other labels -->
+          <text x="46" y="-30" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#ce93d8">FEAR</text>
+          <text x="60" y="6"  text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#c8a870">SURP</text>
+          <text x="42" y="44" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#66bb8a">TRUST</text>
+          <text x="0"  y="62" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#7eb0d4">JOY</text>
+          <text x="-42" y="44" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#7eb0d4">SAD</text>
+          <text x="-60" y="6" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#b39ddb">DISG</text>
+          <text x="-42" y="-30" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#ffb74d">ANT</text>
+
+          <!-- contempt marker: anger+disgust -->
+          <line x1="-56" y1="-14" x2="-80" y2="-26" stroke="rgba(192,57,43,0.5)" stroke-width="1" stroke-dasharray="2,2"/>
+          <text x="-60" y="-32" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="5.5" fill="rgba(192,57,43,0.7)">contempt</text>
+
+          <text x="0" y="4" text-anchor="middle" font-family="'Cinzel',serif" font-size="8" fill="rgba(255,255,255,0.2)" letter-spacing="0.1em">NRC</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- High-scoring words -->
+  <div class="s-sec" style="border-bottom:none">
+    <div class="s-head">Key Annotated Words</div>
+    <div class="word-cloud">
+      <span class="wtag a">rage</span>
+      <span class="wtag a">fury</span>
+      <span class="wtag a">roared</span>
+      <span class="wtag a">invasion</span>
+      <span class="wtag a">traitor</span>
+      <span class="wtag d">filthy</span>
+      <span class="wtag d">snarled</span>
+      <span class="wtag f">terror</span>
+      <span class="wtag f">seize</span>
+      <span class="wtag m">insult</span>
+      <span class="wtag m">screamed</span>
+      <span class="wtag m">fury</span>
+      <span class="wtag m">beasts</span>
+    </div>
+    <div style="margin-top:10px; font-family:var(--mono); font-size:8px; color:var(--ink-ghost); line-height:1.6;">
+      Source: Mohammad &amp; Turney (2013)<br>
+      NRC Word-Emotion Association Lexicon
+    </div>
+  </div>
+
+</aside>
+
+<!-- ── Status bar ── -->
+<footer class="statusbar">
+  <div><span class="pulse"></span>NRC Analysis Active</div>
+  <div class="status-em">Dominant: <span>Anger 68%</span> · Fear 62% · Disgust 48%</div>
+  <div>Rowling, J.K. (2003). HP &amp; OotP. Ch.33</div>
+</footer>
+
+</div><!-- /shell -->
+
+<script>
+  // Highlight toggle
+  const hlBtn = document.getElementById('hlBtn');
+  const proseRoot = document.getElementById('proseRoot');
+  let hlOn = false;
+  hlBtn.addEventListener('click', () => {
+    hlOn = !hlOn;
+    proseRoot.classList.toggle('hl-on', hlOn);
+    hlBtn.classList.toggle('on', hlOn);
+    hlBtn.textContent = hlOn ? 'Hide Highlights' : 'Highlight Emotion Words';
+  });
+
+  // Animate arc bar
+  const arcFill = document.getElementById('arcFill');
+  setTimeout(() => { arcFill.style.width = '68%'; }, 300);
+
+  // Animate emotion bars
+  document.querySelectorAll('.emo-fill[data-w]').forEach((el, i) => {
+    const w = el.dataset.w + '%';
+    el.style.width = '0%';
+    setTimeout(() => { el.style.width = w; }, 500 + i * 90);
+  });
+</script>
+</body>
+</html>

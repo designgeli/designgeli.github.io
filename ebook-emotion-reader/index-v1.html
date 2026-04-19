@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotional E-Book Reader — Ch.33 Fight and Flight</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Cinzel:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:    #0d0d12;
+    --bg-panel:   #13131a;
+    --bg-page:    #16141e;
+    --bg-surface: #1e1b28;
+    --bg-hover:   #252235;
+
+    --ink:        #e8e0d0;
+    --ink-muted:  #8a8298;
+    --ink-faint:  #3a3548;
+
+    --anger:      #c0392b;
+    --anger-mid:  #922b21;
+    --anger-glow: rgba(192,57,43,0.18);
+    --anger-word: rgba(192,57,43,0.28);
+
+    --fear:       #6c3483;
+    --trust:      #1e8449;
+    --surprise:   #d68910;
+    --anticipation:#ca6f1e;
+    --joy:        #1a5276;
+    --sadness:    #2e4057;
+    --disgust:    #4a235a;
+
+    --border:     rgba(255,255,255,0.07);
+    --border-acc: rgba(192,57,43,0.4);
+
+    --serif:      'EB Garamond', Georgia, serif;
+    --display:    'Cinzel', serif;
+    --mono:       'JetBrains Mono', monospace;
+  }
+
+  html, body { height: 100%; background: var(--bg-deep); color: var(--ink); font-family: var(--serif); }
+
+  /* ── Layout ── */
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: 56px 1fr 48px;
+    height: 100vh;
+    min-height: 600px;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .book-badge {
+    font-family: var(--display);
+    font-size: 10px;
+    letter-spacing: .15em;
+    color: var(--anger);
+    background: rgba(192,57,43,0.1);
+    border: 1px solid var(--border-acc);
+    padding: 3px 10px;
+    border-radius: 3px;
+  }
+  .book-title { font-family: var(--display); font-size: 13px; letter-spacing: .04em; color: var(--ink); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .pill-btn {
+    background: none; border: 1px solid var(--border);
+    color: var(--ink-muted); font-family: var(--mono); font-size: 10px;
+    letter-spacing: .06em; padding: 4px 12px; border-radius: 20px; cursor: pointer;
+    transition: all .2s;
+  }
+  .pill-btn:hover { border-color: var(--anger); color: var(--anger); }
+  .pill-btn.active { border-color: var(--anger); color: var(--anger); background: var(--anger-glow); }
+
+  /* ── Reading pane ── */
+  .reader-pane {
+    overflow-y: auto;
+    padding: 48px 64px;
+    background: var(--bg-page);
+    position: relative;
+  }
+  .reader-pane::before {
+    content: '';
+    position: fixed; top: 56px; left: 0;
+    width: calc(100% - 300px); height: 3px;
+    background: linear-gradient(90deg, var(--anger) 0%, transparent 100%);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .chapter-label {
+    font-family: var(--display);
+    font-size: 10px; letter-spacing: .25em;
+    color: var(--anger); margin-bottom: 8px;
+  }
+  .chapter-title {
+    font-family: var(--display);
+    font-size: 26px; font-weight: 400; letter-spacing: .08em;
+    color: var(--ink); margin-bottom: 6px;
+    border-left: 2px solid var(--anger); padding-left: 16px;
+  }
+  .chapter-subtitle {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--ink-muted); letter-spacing: .12em;
+    padding-left: 18px; margin-bottom: 40px;
+  }
+
+  .prose { max-width: 640px; line-height: 1.9; font-size: 17px; color: var(--ink); }
+  .prose p { margin-bottom: 1.6em; }
+
+  /* Emotion word highlighting */
+  .emo-word {
+    border-radius: 2px;
+    transition: background .25s, color .25s;
+    cursor: default;
+  }
+  .highlight-on .emo-word[data-emo="anger"] {
+    background: var(--anger-word);
+    color: #f1948a;
+    padding: 0 2px;
+  }
+  .highlight-on .emo-word[data-emo="fear"] {
+    background: rgba(108,52,131,0.2);
+    color: #c39bd3;
+    padding: 0 2px;
+  }
+
+  .emo-word[data-emo="anger"]:hover .tooltip,
+  .emo-word[data-emo="fear"]:hover .tooltip { display: block; }
+
+  .tooltip {
+    display: none;
+    position: absolute; z-index: 99;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-acc);
+    color: var(--ink-muted); font-family: var(--mono);
+    font-size: 10px; letter-spacing: .06em;
+    padding: 4px 8px; border-radius: 3px; white-space: nowrap;
+    pointer-events: none; transform: translateY(-120%);
+  }
+
+  /* Scene tension bar */
+  .tension-bar-wrap { margin: 32px 0 24px; }
+  .tension-label {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--ink-muted); letter-spacing: .1em; margin-bottom: 6px;
+    display: flex; justify-content: space-between;
+  }
+  .tension-track {
+    height: 3px; background: var(--ink-faint); border-radius: 2px; overflow: hidden;
+  }
+  .tension-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #922b21, #c0392b, #e74c3c);
+    transition: width 1.2s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── Emotion sidebar ── */
+  .emotion-panel {
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 0;
+  }
+
+  .panel-section { padding: 20px; border-bottom: 1px solid var(--border); }
+  .panel-heading {
+    font-family: var(--display); font-size: 9px; letter-spacing: .2em;
+    color: var(--ink-muted); text-transform: uppercase; margin-bottom: 14px;
+  }
+
+  /* NRC wheel viz */
+  .nrc-wheel { position: relative; width: 100%; }
+  .nrc-wheel svg { width: 100%; height: auto; }
+
+  /* Emotion bars */
+  .emo-bars { display: flex; flex-direction: column; gap: 8px; }
+  .emo-bar-row { display: flex; flex-direction: column; gap: 4px; }
+  .emo-bar-label {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 10px;
+  }
+  .emo-bar-name { color: var(--ink-muted); }
+  .emo-bar-pct { color: var(--ink-muted); }
+  .emo-bar-name.dominant { color: var(--anger); font-weight: 500; }
+  .emo-bar-pct.dominant { color: var(--anger); }
+  .emo-track {
+    height: 4px; background: var(--ink-faint); border-radius: 2px; overflow: hidden;
+  }
+  .emo-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+  /* Dominant emotion card */
+  .dominant-card {
+    background: var(--anger-glow);
+    border: 1px solid var(--border-acc);
+    border-radius: 6px; padding: 14px;
+  }
+  .dominant-emo-name {
+    font-family: var(--display); font-size: 18px;
+    color: var(--anger); letter-spacing: .08em; margin-bottom: 4px;
+  }
+  .dominant-emo-sub {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--ink-muted); letter-spacing: .1em; margin-bottom: 10px;
+  }
+  .dominant-emo-desc {
+    font-size: 12px; line-height: 1.65; color: var(--ink-muted);
+  }
+
+  /* Word cloud style list */
+  .word-cloud {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .word-tag {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .06em;
+    padding: 3px 8px; border-radius: 20px; border: 1px solid;
+  }
+  .word-tag.anger-tag { border-color: var(--anger); color: var(--anger); background: rgba(192,57,43,0.08); }
+  .word-tag.fear-tag  { border-color: var(--fear);  color: #9b59b6; background: rgba(108,52,131,0.08); }
+
+  /* ── Status bar ── */
+  .statusbar {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10px; color: var(--ink-muted);
+    letter-spacing: .06em;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--anger); display: inline-block; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* progress indicator */
+  .reading-progress { color: var(--ink-faint); }
+  .reading-progress span { color: var(--anger); }
+
+  /* scrollbar */
+  .reader-pane::-webkit-scrollbar { width: 4px; }
+  .reader-pane::-webkit-scrollbar-track { background: transparent; }
+  .reader-pane::-webkit-scrollbar-thumb { background: var(--ink-faint); border-radius: 2px; }
+  .emotion-panel::-webkit-scrollbar { width: 3px; }
+  .emotion-panel::-webkit-scrollbar-thumb { background: var(--ink-faint); }
+
+  /* annotation */
+  .annotation {
+    margin: 24px 0;
+    padding: 12px 16px;
+    background: var(--bg-surface);
+    border-left: 2px solid var(--anger);
+    border-radius: 0 4px 4px 0;
+  }
+  .annotation-label { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: var(--anger); margin-bottom: 6px; }
+  .annotation-text { font-size: 13px; line-height: 1.6; color: var(--ink-muted); font-style: italic; }
+
+  /* scene divider */
+  .scene-break {
+    display: flex; align-items: center; gap: 12px; margin: 32px 0;
+    color: var(--ink-faint); font-family: var(--mono); font-size: 10px; letter-spacing: .15em;
+  }
+  .scene-break::before, .scene-break::after {
+    content: ''; flex: 1; height: 1px; background: var(--ink-faint);
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Top bar ── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="book-badge">HP·OotP</span>
+      <span class="book-title">Harry Potter and the Order of the Phoenix</span>
+    </div>
+    <div class="topbar-right">
+      <button class="pill-btn" id="toggleHighlight">Highlight Emotion Words</button>
+      <button class="pill-btn active">NRC Analysis</button>
+    </div>
+  </header>
+
+  <!-- ── Main reading pane ── -->
+  <main class="reader-pane" id="readerPane">
+    <div class="chapter-label">Chapter XXXIII</div>
+    <h1 class="chapter-title">Fight and Flight</h1>
+    <div class="chapter-subtitle">Dominant Emotion: ANGER &nbsp;|&nbsp; NRC Lexicon · Plutchik's Wheel</div>
+
+    <!-- Tension bar -->
+    <div class="tension-bar-wrap">
+      <div class="tension-label">
+        <span>Scene Emotional Tension</span>
+        <span id="tensionPct">84%</span>
+      </div>
+      <div class="tension-track"><div class="tension-fill" id="tensionFill" style="width:84%"></div></div>
+    </div>
+
+    <!-- Sample passage — representatively constructed to demonstrate interface; not reproducing copyrighted text -->
+    <div class="prose" id="proseBody">
+
+      <p>
+        The <span class="emo-word" data-emo="anger" style="position:relative">confrontation<span class="tooltip">anger · NRC score: 0.82</span></span>
+        erupted without warning. Every muscle in Harry's body coiled with
+        <span class="emo-word" data-emo="anger" style="position:relative">rage<span class="tooltip">anger · NRC score: 0.96</span></span>,
+        his hands balling into fists as Umbridge's smug expression registered in his mind.
+        The injustice of it — the sheer, blinding
+        <span class="emo-word" data-emo="anger" style="position:relative">fury<span class="tooltip">anger · NRC score: 0.94</span></span>
+        — made it nearly impossible to think.
+      </p>
+
+      <p>
+        Neville's face was pale with
+        <span class="emo-word" data-emo="fear" style="position:relative">terror<span class="tooltip">fear · NRC score: 0.88</span></span>.
+        Ron's knuckles were white. Around them, the members of the Inquisitorial Squad moved with the
+        <span class="emo-word" data-emo="anger" style="position:relative">cruel<span class="tooltip">anger · NRC score: 0.71</span></span>
+        efficiency of those who had been granted power they did not deserve.
+      </p>
+
+      <div class="annotation">
+        <div class="annotation-label">NRC Annotation · Paragraphs 1–2</div>
+        <div class="annotation-text">高密度憤怒詞彙群集（rage, fury, cruel）與恐懼詞彙（terror）共現，符合 Plutchik 輪中「憤怒＋恐懼 → 攻擊性焦慮」的複合情緒模式。</div>
+      </div>
+
+      <p>
+        "You have no right—" Harry began, his voice cracking with the
+        <span class="emo-word" data-emo="anger" style="position:relative">indignation<span class="tooltip">anger · NRC score: 0.78</span></span>
+        that had been building all year. No right to take Dumbledore's Army.
+        No right to <span class="emo-word" data-emo="anger" style="position:relative">punish<span class="tooltip">anger · NRC score: 0.65</span></span> them.
+        No right to stand in that office wearing that
+        <span class="emo-word" data-emo="anger" style="position:relative">revolting<span class="tooltip">anger · disgust · NRC score: 0.73</span></span>
+        cardigan as though she owned the castle.
+      </p>
+
+      <p>
+        But Hermione's hand gripped his arm —
+        <span class="emo-word" data-emo="fear" style="position:relative">desperate<span class="tooltip">fear · NRC score: 0.79</span></span>,
+        urgent. A warning. The kind of warning that said: not now, not like this, not with wands pointing at everyone you love.
+        He swallowed the
+        <span class="emo-word" data-emo="anger" style="position:relative">hatred<span class="tooltip">anger · NRC score: 0.91</span></span>
+        down like burning coals.
+      </p>
+
+      <div class="scene-break">scene break</div>
+
+      <p>
+        The plan crystallised in Hermione's mind with a cold, decisive clarity born of
+        <span class="emo-word" data-emo="fear" style="position:relative">desperation<span class="tooltip">fear · NRC score: 0.84</span></span>.
+        She stepped forward. Her voice was calm — steadier than Harry had ever heard it under such
+        <span class="emo-word" data-emo="anger" style="position:relative">duress<span class="tooltip">anger · NRC score: 0.58</span></span>
+        — and she looked Umbridge directly in the eye.
+      </p>
+
+      <p>
+        "I'll show you," she said simply. "I'll take you to it."
+      </p>
+
+      <p>
+        Umbridge's eyes narrowed with
+        <span class="emo-word" data-emo="anger" style="position:relative">suspicion<span class="tooltip">anger · NRC score: 0.54</span></span>.
+        The terrible hunger for
+        <span class="emo-word" data-emo="anger" style="position:relative">power<span class="tooltip">anger · NRC score: 0.48</span></span>
+        in her expression — that same
+        <span class="emo-word" data-emo="anger" style="position:relative">vicious<span class="tooltip">anger · NRC score: 0.87</span></span>
+        gleam Harry had seen whenever she signed a detention slip — flickered with something that might have been
+        <span class="emo-word" data-emo="anger" style="position:relative">greed<span class="tooltip">anger · NRC score: 0.62</span></span>.
+      </p>
+
+      <div class="annotation">
+        <div class="annotation-label">NRC Annotation · Scene Transition</div>
+        <div class="annotation-text">情緒由外顯的憤怒（Harry的rage/fury）轉向內斂的恐懼驅動策略（Hermione的desperation → cold clarity），展示 Gross 情緒調節理論的 suppression 機制。</div>
+      </div>
+
+      <p>
+        They walked into the Forbidden Forest with Umbridge's wand pressed into Harry's back — each step a kind of
+        <span class="emo-word" data-emo="anger" style="position:relative">forced<span class="tooltip">anger · NRC score: 0.52</span></span>
+        surrender that stoked the
+        <span class="emo-word" data-emo="anger" style="position:relative">smouldering<span class="tooltip">anger · NRC score: 0.69</span></span>
+        fire in his chest. He did not look at her. If he looked at her, he would lose what little control remained.
+      </p>
+
+      <p>
+        And then — the centaurs.
+        <span class="emo-word" data-emo="fear" style="position:relative">Crashing<span class="tooltip">fear · NRC score: 0.61</span></span>
+        through the undergrowth, voices like rolling thunder, eyes burning with an
+        <span class="emo-word" data-emo="anger" style="position:relative">ancient wrath<span class="tooltip">anger · NRC score: 0.88</span></span>
+        that made even Umbridge's pink-cheeked
+        <span class="emo-word" data-emo="anger" style="position:relative">arrogance<span class="tooltip">anger · NRC score: 0.76</span></span>
+        falter. The forest
+        <span class="emo-word" data-emo="fear" style="position:relative">shuddered<span class="tooltip">fear · NRC score: 0.55</span></span>.
+      </p>
+
+    </div><!-- /prose -->
+
+    <div style="height:60px"></div>
+  </main>
+
+  <!-- ── Emotion sidebar ── -->
+  <aside class="emotion-panel">
+
+    <!-- Dominant emotion -->
+    <div class="panel-section">
+      <div class="panel-heading">Dominant Emotion</div>
+      <div class="dominant-card">
+        <div class="dominant-emo-name">Anger</div>
+        <div class="dominant-emo-sub">NRC Lexicon · Plutchik's Wheel</div>
+        <div class="dominant-emo-desc">
+          憤怒情緒主導本章，集中於對權威壓迫的強烈反應與失控邊緣的意志壓制。
+        </div>
+      </div>
+    </div>
+
+    <!-- NRC 8 emotions bar chart -->
+    <div class="panel-section">
+      <div class="panel-heading">NRC 情緒分布 · Ch. 33</div>
+      <div class="emo-bars">
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name dominant">Anger</span>
+            <span class="emo-bar-pct dominant">84%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:84%;background:var(--anger)"></div></div>
+        </div>
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name">Fear</span>
+            <span class="emo-bar-pct">61%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:61%;background:var(--fear)"></div></div>
+        </div>
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name">Disgust</span>
+            <span class="emo-bar-pct">48%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:48%;background:var(--disgust)"></div></div>
+        </div>
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name">Anticipation</span>
+            <span class="emo-bar-pct">38%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:38%;background:var(--anticipation)"></div></div>
+        </div>
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name">Sadness</span>
+            <span class="emo-bar-pct">27%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:27%;background:#5d7a99"></div></div>
+        </div>
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name">Surprise</span>
+            <span class="emo-bar-pct">22%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:22%;background:var(--surprise)"></div></div>
+        </div>
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name">Trust</span>
+            <span class="emo-bar-pct">15%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:15%;background:var(--trust)"></div></div>
+        </div>
+
+        <div class="emo-bar-row">
+          <div class="emo-bar-label">
+            <span class="emo-bar-name">Joy</span>
+            <span class="emo-bar-pct">6%</span>
+          </div>
+          <div class="emo-track"><div class="emo-fill" style="width:6%;background:var(--joy)"></div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Plutchik wheel mini SVG -->
+    <div class="panel-section">
+      <div class="panel-heading">Plutchik's Wheel · 情緒映射</div>
+      <div class="nrc-wheel">
+        <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- outer petals -->
+          <g transform="translate(110,110)">
+            <!-- Anger petal — highlighted -->
+            <path d="M0,0 L-28,-82 A88,88 0 0,1 28,-82 Z" fill="#c0392b" opacity="0.9" filter="url(#glow)"/>
+            <!-- Fear -->
+            <path d="M0,0 L55,-68 A88,88 0 0,1 82,-22 Z" fill="#6c3483" opacity="0.55"/>
+            <!-- Surprise -->
+            <path d="M0,0 L82,-22 A88,88 0 0,1 82,22 Z" fill="#d68910" opacity="0.45"/>
+            <!-- Trust -->
+            <path d="M0,0 L55,68 A88,88 0 0,1 28,82 Z" fill="#1e8449" opacity="0.4"/>
+            <!-- Joy -->
+            <path d="M0,0 L28,82 A88,88 0 0,1 -28,82 Z" fill="#1a5276" opacity="0.35"/>
+            <!-- Sadness -->
+            <path d="M0,0 L-55,68 A88,88 0 0,1 -82,22 Z" fill="#2e4057" opacity="0.4"/>
+            <!-- Disgust -->
+            <path d="M0,0 L-82,22 A88,88 0 0,1 -82,-22 Z" fill="#4a235a" opacity="0.5"/>
+            <!-- Anticipation -->
+            <path d="M0,0 L-55,-68 A88,88 0 0,1 -28,-82 Z" fill="#ca6f1e" opacity="0.45"/>
+
+            <!-- inner ring -->
+            <circle r="36" fill="#16141e" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <circle r="88" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+            <!-- Labels -->
+            <text x="0" y="-50" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#f1948a" letter-spacing="0.05em">ANGER</text>
+            <text x="52" y="-38" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#c39bd3" letter-spacing="0.05em">FEAR</text>
+            <text x="62" y="8" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#d68910" letter-spacing="0.05em">SURP</text>
+            <text x="42" y="52" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#1e8449" letter-spacing="0.05em">TRUST</text>
+            <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#5d7a99" letter-spacing="0.05em">JOY</text>
+            <text x="-44" y="52" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#5d7a99" letter-spacing="0.05em">SAD</text>
+            <text x="-62" y="8" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#9b59b6" letter-spacing="0.05em">DIS</text>
+            <text x="-42" y="-38" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#e67e22" letter-spacing="0.05em">ANT</text>
+
+            <!-- center -->
+            <text x="0" y="4" text-anchor="middle" font-family="'Cinzel',serif" font-size="9" fill="rgba(255,255,255,0.3)" letter-spacing="0.1em">NRC</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- High-scoring anger/fear words -->
+    <div class="panel-section">
+      <div class="panel-heading">高分情緒詞彙</div>
+      <div class="word-cloud">
+        <span class="word-tag anger-tag">rage</span>
+        <span class="word-tag anger-tag">fury</span>
+        <span class="word-tag anger-tag">hatred</span>
+        <span class="word-tag anger-tag">vicious</span>
+        <span class="word-tag anger-tag">indignation</span>
+        <span class="word-tag anger-tag">cruel</span>
+        <span class="word-tag anger-tag">wrath</span>
+        <span class="word-tag anger-tag">revolting</span>
+        <span class="word-tag fear-tag">terror</span>
+        <span class="word-tag fear-tag">desperation</span>
+        <span class="word-tag fear-tag">desperate</span>
+      </div>
+    </div>
+
+    <!-- Research note -->
+    <div class="panel-section" style="border-bottom:none">
+      <div class="panel-heading">研究備註</div>
+      <div style="font-size:11px; line-height:1.7; color:var(--ink-muted);">
+        本 Prototype 探討情感介面設計如何將 NRC 詞典分析結果即時映射至閱讀環境的視覺語彙——包括色溫、字型重量與邊框強度——以強化讀者的情緒感知。
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Status bar ── -->
+  <footer class="statusbar">
+    <div><span class="status-dot"></span>Emotional Analysis Active</div>
+    <div class="reading-progress">Chapter 33 · <span>Fight and Flight</span></div>
+    <div>HP · OotP · 2003 · J.K. Rowling</div>
+  </footer>
+
+</div>
+
+<script>
+  const toggleBtn = document.getElementById('toggleHighlight');
+  const prose = document.getElementById('proseBody');
+  let highlightOn = false;
+
+  toggleBtn.addEventListener('click', () => {
+    highlightOn = !highlightOn;
+    prose.classList.toggle('highlight-on', highlightOn);
+    toggleBtn.classList.toggle('active', highlightOn);
+    toggleBtn.textContent = highlightOn ? 'Hide Highlights' : 'Highlight Emotion Words';
+  });
+
+  // Animate tension bar on load
+  const fill = document.getElementById('tensionFill');
+  fill.style.width = '0%';
+  setTimeout(() => { fill.style.width = '84%'; }, 400);
+
+  // Animate emotion bars
+  const emoBars = document.querySelectorAll('.emo-fill');
+  emoBars.forEach((bar, i) => {
+    const target = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => { bar.style.width = target; }, 600 + i * 80);
+  });
+</script>
+</body>
+</html>
