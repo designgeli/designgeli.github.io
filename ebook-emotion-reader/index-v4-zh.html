@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情感電子閱讀器 v3 · 哈利波特：鳳凰會的密令 第三十三章</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Cinzel:wght@400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-deep:   #0c0c10;
+  --bg-panel:  #111118;
+  --bg-page:   #14121c;
+  --bg-card:   #1a1825;
+  --bg-hover:  #221f30;
+  --ink:       #e4dccf;
+  --ink-mid:   #a89f92;
+  --ink-dim:   #5a5468;
+  --ink-ghost: #2e2a3a;
+
+  --c-anger:        #c0392b;
+  --c-anger-bg:     rgba(192,57,43,0.15);
+  --c-anger-hl:     rgba(192,57,43,0.25);
+  --c-fear:         #7d3c98;
+  --c-fear-bg:      rgba(125,60,152,0.13);
+  --c-fear-hl:      rgba(125,60,152,0.22);
+  --c-disgust:      #6e2f8a;
+  --c-disgust-bg:   rgba(110,47,138,0.13);
+  --c-disgust-hl:   rgba(110,47,138,0.22);
+  --c-sadness:      #2e6da4;
+  --c-sadness-bg:   rgba(46,109,164,0.13);
+  --c-anticipation: #c87a1a;
+  --c-joy:          #1e7e44;
+  --c-trust:        #1e7e44;
+
+  --border:  rgba(255,255,255,0.06);
+  --serif:   'EB Garamond', 'Noto Serif TC', Georgia, serif;
+  --display: 'Cinzel', serif;
+  --mono:    'JetBrains Mono', monospace;
+}
+
+html, body { height: 100%; background: var(--bg-deep); color: var(--ink); font-family: var(--serif); overflow: hidden; }
+
+/* ── Shell ── */
+.shell {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: 52px 1fr 44px;
+  height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+  grid-column: 1/-1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+.tb-left { display: flex; align-items: center; gap: 14px; }
+.badge {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .18em;
+  color: var(--c-anger); background: var(--c-anger-bg);
+  border: 1px solid rgba(192,57,43,0.35);
+  padding: 3px 9px; border-radius: 2px;
+}
+.book-title { font-family: var(--display); font-size: 11.5px; letter-spacing: .03em; }
+.chapter-tag { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); letter-spacing: .06em; }
+.tb-right { display: flex; align-items: center; gap: 10px; }
+
+.toggle-btn {
+  background: none; border: 1px solid var(--border);
+  color: var(--ink-mid); font-family: var(--mono); font-size: 10px;
+  letter-spacing: .06em; padding: 4px 12px; border-radius: 20px; cursor: pointer;
+  transition: all .2s;
+}
+.toggle-btn:hover { border-color: var(--c-anger); color: var(--c-anger); }
+.toggle-btn.on { border-color: var(--c-anger); color: var(--c-anger); background: var(--c-anger-bg); }
+
+/* ── Reader pane ── */
+.reader {
+  overflow-y: auto; padding: 28px 40px 50px;
+  background: var(--bg-page); position: relative;
+}
+.reader::-webkit-scrollbar { width: 3px; }
+.reader::-webkit-scrollbar-thumb { background: var(--ink-ghost); border-radius: 2px; }
+
+.reader::before {
+  content: ''; position: sticky; top: 0; left: 0;
+  display: block; height: 2px; width: 100%;
+  background: linear-gradient(90deg, var(--c-anger) 0%, rgba(192,57,43,.3) 70%, transparent 100%);
+}
+
+.ch-eyebrow { font-family: var(--display); font-size: 9px; letter-spacing: .3em; color: var(--c-anger); margin: 16px 0 6px; }
+.ch-title   { font-family: var(--display); font-size: 22px; font-weight: 400; letter-spacing: .06em; color: var(--ink); margin-bottom: 2px; }
+.ch-title-zh { font-size: 15px; color: var(--ink-mid); letter-spacing: .05em; margin-bottom: 4px; font-family: var(--serif); }
+.ch-meta    { font-family: var(--mono); font-size: 9px; color: var(--ink-dim); letter-spacing: .08em; margin-bottom: 24px; }
+
+/* ── Emotion Curve ── */
+.emo-curve-wrap { margin: 0 0 18px; }
+.emo-curve-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 9px; color: var(--ink-dim); letter-spacing: .07em; margin-bottom: 8px;
+}
+.curve-legend { display: flex; gap: 12px; }
+.cl-item { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 8px; color: var(--ink-dim); }
+.cl-line { width: 18px; height: 2px; border-radius: 1px; }
+.curve-svg { width: 100%; height: 108px; display: block; overflow: visible; }
+.scene-dot { cursor: pointer; transition: all .2s; }
+.scene-dot:hover { filter: brightness(1.4); }
+.curve-svg-wrap { position: relative; }
+
+/* ── Scene blocks ── */
+.scene { max-width: 600px; margin-bottom: 0; }
+.scene-block {
+  border-radius: 6px;
+  margin-bottom: 6px;
+  padding: 14px 18px 10px;
+  border-left: 3px solid transparent;
+  transition: background 0.5s ease, border-color 0.3s ease;
+}
+.scene-block.s1 {
+  background: linear-gradient(160deg, rgba(125,60,152,0.07) 0%, rgba(192,57,43,0.04) 100%);
+  border-left-color: rgba(125,60,152,0.45);
+}
+.scene-block.s1 .nrc-note { border-left-color: var(--c-fear); }
+.scene-block.s1 .nrc-note-head { color: #ce93d8; }
+.scene-block.s2 {
+  background: rgba(192,57,43,0.11);
+  border-left-color: rgba(192,57,43,0.75);
+}
+.scene-block.s3 {
+  background: linear-gradient(160deg, rgba(192,57,43,0.08) 0%, rgba(110,47,138,0.13) 100%);
+  border-left-color: rgba(130,42,115,0.65);
+}
+.scene-block.s3 .nrc-note { border-left-color: var(--c-disgust); }
+.scene-block.s3 .nrc-note-head { color: #b39ddb; }
+.scene-block.s4 {
+  background: linear-gradient(160deg, rgba(192,57,43,0.10) 0%, rgba(46,109,164,0.08) 100%);
+  border-left-color: rgba(192,57,43,0.55);
+}
+.scene-block.s5 {
+  background: linear-gradient(160deg, rgba(200,122,26,0.09) 0%, rgba(192,57,43,0.08) 100%);
+  border-left-color: rgba(200,122,26,0.55);
+}
+.scene-block.s5 .nrc-note { border-left-color: var(--c-anticipation); }
+.scene-block.s5 .nrc-note-head { color: #ffb74d; }
+.scene-block:hover { filter: brightness(1.08); }
+.scene-block.curve-active { outline: 1px solid rgba(255,255,255,0.12); outline-offset: 3px; }
+
+/* Scene head */
+.scene-head {
+  display: flex; align-items: center; gap: 10px; margin: 4px 0 10px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--ink-dim);
+}
+.scene-head::before, .scene-head::after { content:''; flex:1; height:1px; background: var(--ink-ghost); }
+.scene-head.anger-peak::before, .scene-head.anger-peak::after { background: rgba(192,57,43,.3); }
+.scene-head.anger-peak { color: var(--c-anger); }
+
+/* ── Prose ── */
+.prose { font-size: 17px; line-height: 1.9; color: var(--ink); }
+.prose p { margin-bottom: .8em; }
+
+/* Chinese translation block */
+.prose-zh {
+  font-size: 13px; line-height: 1.8; color: var(--ink-dim);
+  border-left: 2px solid var(--ink-ghost);
+  padding-left: 12px; margin-bottom: 1.4em;
+  font-style: normal; letter-spacing: .02em;
+}
+
+/* emotion word spans */
+.ew { position: relative; border-radius: 2px; cursor: default; transition: background .2s; }
+.ew[data-e="anger"]   { border-bottom: 1.5px solid rgba(192,57,43,.45); }
+.ew[data-e="fear"]    { border-bottom: 1.5px solid rgba(125,60,152,.45); }
+.ew[data-e="disgust"] { border-bottom: 1.5px solid rgba(110,47,138,.45); }
+.ew[data-e="sadness"] { border-bottom: 1.5px solid rgba(46,109,164,.35); }
+.ew[data-e="multi"]   { border-bottom: 1.5px dotted rgba(200,122,26,.5); }
+
+.hl-on .ew[data-e="anger"]   { background: var(--c-anger-hl); padding: 0 2px; }
+.hl-on .ew[data-e="fear"]    { background: var(--c-fear-hl);   padding: 0 2px; }
+.hl-on .ew[data-e="disgust"] { background: var(--c-disgust-hl);padding: 0 2px; }
+.hl-on .ew[data-e="multi"]   { background: rgba(200,122,26,.18);padding: 0 2px; }
+
+/* tooltips */
+.ew:hover .tip { display: block; }
+.tip {
+  display: none; position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%); z-index: 20;
+  background: var(--bg-card); border: 1px solid rgba(192,57,43,.4);
+  font-family: var(--mono); font-size: 9px; letter-spacing: .06em; color: var(--ink-mid);
+  padding: 5px 9px; border-radius: 3px; white-space: nowrap;
+  pointer-events: none;
+}
+.tip::after {
+  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 4px solid transparent; border-top-color: rgba(192,57,43,.4);
+}
+.tip .em-anger   { color: #e57373; }
+.tip .em-fear    { color: #ce93d8; }
+.tip .em-disgust { color: #b39ddb; }
+.tip .em-multi   { color: var(--c-anticipation); }
+.tip .em-sadness { color: #90caf9; }
+
+/* ── NRC annotation box ── */
+.nrc-note {
+  margin: 12px 0 14px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border-left: 2px solid var(--c-anger);
+  border-radius: 0 4px 4px 0;
+}
+.nrc-note-head { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: var(--c-anger); margin-bottom: 5px; }
+.nrc-note-body { font-size: 12.5px; line-height: 1.65; color: var(--ink-mid); }
+
+/* ── DeepMoji Panel ── */
+.deepmoji-panel {
+  display: flex; align-items: center; gap: 14px;
+  margin: 10px 0 12px;
+  padding: 9px 13px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.dmp-emojis { font-size: 24px; line-height: 1; letter-spacing: 0.08em; flex-shrink: 0; }
+.dmp-info { flex: 1; min-width: 0; }
+.dmp-label {
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: .1em; color: var(--ink-dim);
+  margin-bottom: 5px;
+}
+.dmp-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.dmp-tag {
+  font-family: var(--mono); font-size: 8px; letter-spacing: .04em;
+  padding: 2px 8px; border-radius: 20px; border: 1px solid;
+}
+.dmp-tag.anger      { color: #e57373; border-color: rgba(192,57,43,.4); background: rgba(192,57,43,.07); }
+.dmp-tag.fear       { color: #ce93d8; border-color: rgba(125,60,152,.4); background: rgba(125,60,152,.07); }
+.dmp-tag.disgust    { color: #b39ddb; border-color: rgba(110,47,138,.4); background: rgba(110,47,138,.07); }
+.dmp-tag.sadness    { color: #90caf9; border-color: rgba(46,109,164,.35); background: rgba(46,109,164,.07); }
+.dmp-tag.joy        { color: #a5d6a7; border-color: rgba(30,126,68,.4);  background: rgba(30,126,68,.07); }
+.dmp-tag.trust      { color: #a5d6a7; border-color: rgba(30,126,68,.4);  background: rgba(30,126,68,.07); }
+.dmp-tag.anticipation { color: #ffcc80; border-color: rgba(200,122,26,.4); background: rgba(200,122,26,.07); }
+.dmp-tag.contempt   { color: #f48fb1; border-color: rgba(190,60,100,.4); background: rgba(190,60,100,.07); }
+.dmp-tag.pride      { color: #ffe082; border-color: rgba(200,140,20,.4); background: rgba(200,140,20,.07); }
+.dmp-src {
+  font-family: var(--mono); font-size: 7.5px; color: var(--ink-ghost);
+  white-space: nowrap; align-self: flex-end;
+}
+.dmp-gross {
+  margin-top: 4px;
+  font-family: var(--mono); font-size: 7.5px; letter-spacing: .05em;
+  color: var(--ink-ghost);
+}
+.dmp-gross span { color: var(--ink-dim); }
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--bg-panel); border-left: 1px solid var(--border);
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--ink-ghost); }
+.s-sec { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.s-head { font-family: var(--display); font-size: 9px; letter-spacing: .16em; color: var(--ink-dim); margin-bottom: 12px; text-transform: uppercase; }
+
+.dom-card {
+  background: var(--c-anger-bg); border: 1px solid rgba(192,57,43,.3);
+  border-radius: 5px; padding: 12px;
+}
+.dom-name { font-family: var(--display); font-size: 16px; color: var(--c-anger); letter-spacing: .06em; margin-bottom: 2px; }
+.dom-name-zh { font-size: 12px; color: var(--c-anger); opacity: .75; letter-spacing: .04em; margin-bottom: 6px; }
+.dom-sub  { font-family: var(--mono); font-size: 8px; letter-spacing: .1em; color: var(--ink-dim); margin-bottom: 8px; }
+.dom-desc { font-size: 11.5px; line-height: 1.6; color: var(--ink-mid); }
+
+.legend { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.leg-row { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 9px; color: var(--ink-mid); }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.emo-bars { display: flex; flex-direction: column; gap: 7px; }
+.emo-row  { display: flex; flex-direction: column; gap: 3px; }
+.emo-lbl  { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; }
+.emo-name { color: var(--ink-dim); }
+.emo-pct  { color: var(--ink-dim); }
+.emo-name.hi, .emo-pct.hi { color: var(--c-anger); }
+.emo-track { height: 3px; background: var(--ink-ghost); border-radius: 2px; overflow: hidden; }
+.emo-fill  { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+.wheel-wrap { display: flex; justify-content: center; }
+.wheel-wrap svg { width: 200px; height: 200px; }
+
+.word-cloud { display: flex; flex-wrap: wrap; gap: 5px; }
+.wtag {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .05em;
+  padding: 2px 9px; border-radius: 20px; border: 1px solid;
+}
+.wtag.a { border-color: rgba(192,57,43,.5); color: #e57373; background: rgba(192,57,43,.08); }
+.wtag.f { border-color: rgba(125,60,152,.5); color: #ce93d8; background: rgba(125,60,152,.08); }
+.wtag.d { border-color: rgba(110,47,138,.5); color: #b39ddb; background: rgba(110,47,138,.08); }
+.wtag.m { border-color: rgba(200,122,26,.5); color: #ffb74d; background: rgba(200,122,26,.08); }
+
+/* ── Status bar ── */
+.statusbar {
+  grid-column: 1/-1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; background: var(--bg-panel); border-top: 1px solid var(--border);
+  font-family: var(--mono); font-size: 9px; color: var(--ink-dim); letter-spacing: .06em;
+}
+.pulse { width: 5px; height: 5px; border-radius: 50%; background: var(--c-anger); display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+.status-em span { color: var(--c-anger); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── 頂部導覽列 ── -->
+<header class="topbar">
+  <div class="tb-left">
+    <span class="badge">HP · OotP</span>
+    <span class="book-title">哈利波特：鳳凰會的密令</span>
+    <span class="chapter-tag">第三十三章 · 逃戰</span>
+  </div>
+  <div class="tb-right">
+    <button class="toggle-btn" id="hlBtn">標示情緒詞彙</button>
+  </div>
+</header>
+
+<!-- ── 閱讀主區 ── -->
+<main class="reader" id="reader">
+  <div class="ch-eyebrow">第三十三章</div>
+  <h1 class="ch-title">Fight and Flight</h1>
+  <div class="ch-title-zh">逃　戰</div>
+  <div class="ch-meta">NRC 情緒分析 · 主導情緒：憤怒 · DeepMoji · Plutchik 情緒輪 · v3</div>
+
+  <!-- ── 情緒弧線 ── -->
+  <div class="emo-curve-wrap">
+    <div class="emo-curve-head">
+      <span>情緒弧線 · 五幕場景 · NRC 多情緒強度分析</span>
+      <div class="curve-legend">
+        <div class="cl-item"><div class="cl-line" style="background:#c0392b"></div>憤怒</div>
+        <div class="cl-item"><div class="cl-line" style="background:#7d3c98"></div>恐懼</div>
+        <div class="cl-item"><div class="cl-line" style="background:#6e2f8a"></div>厭惡</div>
+        <div class="cl-item"><div class="cl-line" style="background:#2e6da4; opacity:.8"></div>悲傷</div>
+      </div>
+    </div>
+    <div class="curve-svg-wrap">
+      <svg class="curve-svg" viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- 格線 -->
+        <line x1="50" y1="37.5" x2="580" y2="37.5" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="50" y1="60"   x2="580" y2="60"   stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="50" y1="82.5" x2="580" y2="82.5" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="50" y1="15" x2="50" y2="105" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+        <!-- Y 軸標籤 -->
+        <text x="40" y="18"  font-family="'JetBrains Mono',monospace" font-size="7" fill="rgba(255,255,255,0.2)" text-anchor="end">100</text>
+        <text x="40" y="63"  font-family="'JetBrains Mono',monospace" font-size="7" fill="rgba(255,255,255,0.2)" text-anchor="end">50</text>
+        <text x="40" y="107" font-family="'JetBrains Mono',monospace" font-size="7" fill="rgba(255,255,255,0.2)" text-anchor="end">0</text>
+
+        <!-- 場景 X 軸標籤 -->
+        <text x="50"    y="120" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="rgba(255,255,255,0.22)" text-anchor="middle">S1·壓制</text>
+        <text x="182.5" y="120" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="rgba(192,57,43,0.7)"   text-anchor="middle">S2·峰值</text>
+        <text x="315"   y="120" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="rgba(110,47,138,0.7)"  text-anchor="middle">S3·輕蔑</text>
+        <text x="447.5" y="120" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="rgba(255,255,255,0.22)" text-anchor="middle">S4·釋放</text>
+        <text x="580"   y="120" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="rgba(200,122,26,0.7)"  text-anchor="middle">S5·傲慢–憤怒</text>
+
+        <!-- 面積填充 -->
+        <path d="M50,67.2 C110,67.2 122.5,22.2 182.5,22.2 C242.5,22.2 255,34.8 315,34.8 C375,34.8 387.5,31.2 447.5,31.2 C507.5,31.2 520,43.8 580,43.8 L580,105 L50,105 Z"
+              fill="rgba(192,57,43,0.07)" />
+        <path d="M50,88.8 C110,88.8 122.5,52.8 182.5,52.8 C242.5,52.8 255,25.8 315,25.8 C375,25.8 387.5,58.2 447.5,58.2 C507.5,58.2 520,55.5 580,55.5 L580,105 L50,105 Z"
+              fill="rgba(110,47,138,0.04)" />
+
+        <!-- 悲傷線（虛線） -->
+        <path d="M50,85.2 C110,85.2 122.5,76.2 182.5,76.2 C242.5,76.2 255,82.5 315,82.5 C375,82.5 387.5,52.8 447.5,52.8 C507.5,52.8 520,79.8 580,79.8"
+              fill="none" stroke="#2e6da4" stroke-width="1.5" stroke-opacity="0.55" stroke-dasharray="4,3"/>
+        <!-- 恐懼線 -->
+        <path d="M50,60 C110,60 122.5,70.8 182.5,70.8 C242.5,70.8 255,49.2 315,49.2 C375,49.2 387.5,67.2 447.5,67.2 C507.5,67.2 520,85.2 580,85.2"
+              fill="none" stroke="#7d3c98" stroke-width="1.8" stroke-opacity="0.65"/>
+        <!-- 厭惡線 -->
+        <path d="M50,88.8 C110,88.8 122.5,52.8 182.5,52.8 C242.5,52.8 255,25.8 315,25.8 C375,25.8 387.5,58.2 447.5,58.2 C507.5,58.2 520,55.5 580,55.5"
+              fill="none" stroke="#6e2f8a" stroke-width="1.8" stroke-opacity="0.7"/>
+        <!-- 憤怒線（最顯眼） -->
+        <path d="M50,67.2 C110,67.2 122.5,22.2 182.5,22.2 C242.5,22.2 255,34.8 315,34.8 C375,34.8 387.5,31.2 447.5,31.2 C507.5,31.2 520,43.8 580,43.8"
+              fill="none" stroke="#c0392b" stroke-width="2.2" stroke-opacity="0.9"/>
+
+        <!-- 峰值垂直指示線 -->
+        <line x1="182.5" y1="22.2" x2="182.5" y2="105" stroke="rgba(192,57,43,0.2)" stroke-width="1" stroke-dasharray="2,3"/>
+        <text x="186" y="30" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="rgba(192,57,43,0.55)">峰值</text>
+
+        <!-- 輕蔑融合標記 -->
+        <line x1="315" y1="25.8" x2="315" y2="34.8" stroke="rgba(150,40,120,0.5)" stroke-width="2"/>
+        <text x="319" y="22" font-family="'JetBrains Mono',monospace" font-size="6" fill="rgba(150,40,120,0.7)">輕蔑</text>
+
+        <!-- 互動節點——憤怒線 -->
+        <g class="scene-dot" data-scene="1" onclick="scrollToScene(1)" title="第一幕 · 憤怒 42">
+          <circle cx="50"    cy="67.2" r="4" fill="#c0392b" opacity="0.85" stroke="#0c0c10" stroke-width="1.5"/>
+        </g>
+        <g class="scene-dot" data-scene="2" onclick="scrollToScene(2)" title="第二幕 · 憤怒 92">
+          <circle cx="182.5" cy="22.2" r="5" fill="#c0392b" opacity="1"    stroke="#0c0c10" stroke-width="1.5"/>
+          <circle cx="182.5" cy="22.2" r="8" fill="none" stroke="rgba(192,57,43,0.3)" stroke-width="1"/>
+        </g>
+        <g class="scene-dot" data-scene="3" onclick="scrollToScene(3)" title="第三幕 · 憤怒 78">
+          <circle cx="315"   cy="34.8" r="4" fill="#c0392b" opacity="0.85" stroke="#0c0c10" stroke-width="1.5"/>
+        </g>
+        <g class="scene-dot" data-scene="4" onclick="scrollToScene(4)" title="第四幕 · 憤怒 82">
+          <circle cx="447.5" cy="31.2" r="4" fill="#c0392b" opacity="0.85" stroke="#0c0c10" stroke-width="1.5"/>
+        </g>
+        <g class="scene-dot" data-scene="5" onclick="scrollToScene(5)" title="第五幕 · 憤怒 68">
+          <circle cx="580"   cy="43.8" r="4" fill="#c0392b" opacity="0.85" stroke="#0c0c10" stroke-width="1.5"/>
+        </g>
+
+        <!-- 厭惡峰值節點（第三幕） -->
+        <g class="scene-dot" data-scene="3" onclick="scrollToScene(3)">
+          <circle cx="315" cy="25.8" r="3.5" fill="#6e2f8a" opacity="0.9" stroke="#0c0c10" stroke-width="1.5"/>
+          <circle cx="315" cy="25.8" r="7"   fill="none" stroke="rgba(110,47,138,0.3)" stroke-width="1"/>
+        </g>
+
+        <!-- 悲傷上升節點（第四幕） -->
+        <g class="scene-dot" data-scene="4" onclick="scrollToScene(4)">
+          <circle cx="447.5" cy="52.8" r="3.5" fill="#2e6da4" opacity="0.7" stroke="#0c0c10" stroke-width="1.5"/>
+        </g>
+
+        <!-- 喜悅出現（第五幕） -->
+        <circle cx="580" cy="64.3" r="3" fill="#1e7e44" opacity="0.7" stroke="#0c0c10" stroke-width="1.5"/>
+        <text x="555" y="61" font-family="'JetBrains Mono',monospace" font-size="6" fill="rgba(30,126,68,0.6)" text-anchor="middle">喜悅↑</text>
+
+        <!-- Gross 模型弧線說明 -->
+        <path d="M50,115 Q315,108 580,115" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="315" y="128" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="rgba(255,255,255,0.15)" text-anchor="middle" font-style="italic">Gross 模型：壓制 → 峰值 → 輕蔑 → 釋放 → 防衛性驕傲</text>
+
+      </svg>
+    </div>
+  </div><!-- /情緒弧線 -->
+
+  <!-- ── 各幕場景 ── -->
+  <div class="scene" id="proseRoot">
+
+    <!-- ═══ 第一幕 ═══ -->
+    <div class="scene-block s1" id="scene1">
+      <div class="scene-head">第一幕 · 壓制的憤怒</div>
+      <div class="prose">
+        <p>
+          Harry did not dare attempt to talk to her; Umbridge was walking so closely behind them that he could hear her
+          <span class="ew" data-e="fear"><span class="tip"><span class="em-fear">恐懼</span></span>ragged</span>
+          breathing.
+        </p>
+        <p class="prose-zh">哈利不敢開口說話；恩不里居緊跟在他們後方，他幾乎能聽到她那沉重、<span style="color:var(--c-fear);opacity:.7">粗礪</span>的喘息聲。</p>
+
+        <p>
+          "Yes," said Umbridge, whose
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span> · 期待</span>excitement</span>
+          seemed to be mounting. "Yes, he would have done, of course, the great half-breed oaf. . . ."
+        </p>
+        <p class="prose-zh">「是的，」恩不里居說道，她的<span style="color:var(--c-anger);opacity:.7">興奮</span>似乎正在升溫，「是的，他一定會這麼做的，當然，那個大半血種蠢蛋……」</p>
+
+        <p>
+          She laughed. Harry felt a strong
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-fear">恐懼</span> · 期待</span>urge</span>
+          to swing around and
+          <span class="ew" data-e="fear"><span class="tip"><span class="em-fear">恐懼</span></span>seize</span>
+          her by the throat, but resisted. His scar was
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>throbbing</span>
+          in the soft evening air.
+        </p>
+        <p class="prose-zh">她笑了。哈利心中湧起強烈的<span style="color:var(--c-anticipation);opacity:.8">衝動</span>，想要猛地轉身<span style="color:var(--c-fear);opacity:.7">扼住</span>她的喉嚨，但他忍住了。他的傷疤在柔和的晚風中一陣陣<span style="color:var(--c-anger);opacity:.7">抽痛</span>。</p>
+      </div>
+
+      <!-- DeepMoji 面板 S1 -->
+      <div class="deepmoji-panel">
+        <div class="dmp-emojis">😰&nbsp;😤</div>
+        <div class="dmp-info">
+          <div class="dmp-label">DeepMoji · 第一幕 · 情緒壓制（Suppressed Anger）</div>
+          <div class="dmp-tags">
+            <span class="dmp-tag fear">恐懼</span>
+            <span class="dmp-tag anger">憤怒</span>
+            <span class="dmp-tag anticipation">期待</span>
+          </div>
+          <div class="dmp-gross">Gross 模型：<span>反應調節（Response Modulation）</span>——衝動已生，但意志力壓制</div>
+        </div>
+        <div class="dmp-src">DeepMoji × NRC</div>
+      </div>
+
+      <div class="nrc-note">
+        <div class="nrc-note-head">NRC · 第一幕</div>
+        <div class="nrc-note-body">「urge to seize her by the throat, but resisted」——情緒壓制機制（suppression）：urge 觸發多重情緒（憤怒 + 恐懼 + 期待），resist 顯示意志控制。NRC 詞典中 seize 標記恐懼；此處展現 Gross 情緒調節的<strong>反應調節（response modulation）</strong>階段。</div>
+      </div>
+    </div><!-- /第一幕 -->
+
+    <!-- ═══ 第二幕 ═══ -->
+    <div class="scene-block s2" id="scene2">
+      <div class="scene-head anger-peak">第二幕 · 憤怒峰值——侮辱</div>
+      <div class="prose">
+        <p>
+          "'Near-human
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span> · 悲傷 · 驚訝</span>intelligence</span>'?"
+          repeated Magorian, as Bane and several others
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>roared</span>
+          with
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>rage</span>
+          and pawed the ground.
+          "We consider that a great
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span> · 悲傷 · 驚訝</span>insult</span>,
+          human! Our intelligence, thankfully, far outstrips your own—"
+        </p>
+        <p class="prose-zh">「『接近人類的<span style="color:var(--c-anticipation);opacity:.8">智力</span>』？」馬廣連重複道，班恩和其他幾匹人馬<span style="color:var(--c-anger);opacity:.8">怒吼</span>著，用蹄子踏地。「我們認為這是嚴重的<span style="color:var(--c-anger);opacity:.8">侮辱</span>，人類！我們的智慧，幸好，遠遠超越你們——」</p>
+
+        <p>
+          "What are you doing in our forest?" bellowed the hard-faced gray centaur.
+          "Why are you here?"
+        </p>
+        <p class="prose-zh">「你們在我們的森林裡做什麼？」那匹面容冷酷的灰色人馬怒吼道，「你們來這裡幹什麼？」</p>
+
+        <p>
+          "*Your* forest?" said Umbridge, shaking now not only with
+          <span class="ew" data-e="fear"><span class="tip"><span class="em-fear">恐懼</span></span>fright</span>
+          but also, it seemed, with
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span></span>indignation</span>.
+        </p>
+        <p class="prose-zh">「『你們的』森林？」恩不里居說，她渾身顫抖，不僅因為<span style="color:var(--c-fear);opacity:.7">恐懼</span>，似乎也因為義<span style="color:var(--c-anger);opacity:.7">憤填膺</span>。</p>
+      </div>
+
+      <!-- DeepMoji 面板 S2 -->
+      <div class="deepmoji-panel">
+        <div class="dmp-emojis">🤬&nbsp;😡</div>
+        <div class="dmp-info">
+          <div class="dmp-label">DeepMoji · 第二幕 · 憤怒峰值（Anger Peak）</div>
+          <div class="dmp-tags">
+            <span class="dmp-tag anger">憤怒 ×4</span>
+            <span class="dmp-tag disgust">厭惡</span>
+            <span class="dmp-tag sadness">悲傷</span>
+            <span class="dmp-tag">驚訝</span>
+          </div>
+          <div class="dmp-gross">「insult（侮辱）」= 最高多情緒密度詞 · NRC 四標記並存 · <span style="color:var(--c-anger)">第三十三章峰值</span></div>
+        </div>
+        <div class="dmp-src">DeepMoji × NRC</div>
+      </div>
+
+      <div class="nrc-note">
+        <div class="nrc-note-head">NRC · 第二幕 · 憤怒峰值</div>
+        <div class="nrc-note-body">「insult（侮辱）」在 NRC 詞典同時標記<strong>憤怒＋厭惡＋悲傷＋驚訝</strong>，為本場景最高多情緒密度詞。「rage（狂怒）」為純憤怒標記；「roared（怒吼）」屬強度動詞，結合情境強化憤怒效果。此幕為第三十三章憤怒情緒密度峰值。</div>
+      </div>
+    </div><!-- /第二幕 -->
+
+    <!-- ═══ 第三幕 ═══ -->
+    <div class="scene-block s3" id="scene3">
+      <div class="scene-head anger-peak">第三幕 · 厭惡＋憤怒融合 → 輕蔑</div>
+      <div class="prose">
+        <p>
+          "
+          <span class="ew" data-e="disgust"><span class="tip"><span class="em-disgust">厭惡</span></span>Filthy</span>
+          half-breeds!" she
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span> · <span class="em-fear">恐懼</span> · 驚訝</span>screamed</span>,
+          her hands still tight over her head. "
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-fear">恐懼</span></span>Beasts</span>!
+          Uncontrolled animals!"
+        </p>
+        <p class="prose-zh">「<span style="color:var(--c-disgust);opacity:.8">骯髒的</span>雜種！」她雙手緊捂頭頂，<span style="color:var(--c-anger);opacity:.8">尖聲嘶吼</span>道，「<span style="color:var(--c-anger);opacity:.7">禽獸</span>！不受控制的野獸！」</p>
+
+        <p>
+          Ropes flew out of midair like thick snakes, wrapping themselves tightly around the centaur's torso and trapping his arms. He gave a cry of
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>rage</span>
+          and reared onto his hind legs, attempting to free himself, while the other centaurs
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>charged</span>.
+        </p>
+        <p class="prose-zh">幾根繩子從半空中飛出，像粗蛇一般緊緊纏住那匹人馬的軀幹，困住了他的手臂。他<span style="color:var(--c-anger);opacity:.8">憤怒地嚎叫</span>一聲，立起後腿試圖掙脫，而其他人馬也<span style="color:var(--c-anger);opacity:.7">衝了過來</span>。</p>
+
+        <p>
+          "Nooooo!" he heard Umbridge
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span> · <span class="em-fear">恐懼</span> · 驚訝</span>shriek</span>.
+          "Noooooo . . . you cannot . . . unhand me, you
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-fear">恐懼</span></span>animals</span>
+          . . . nooooo!"
+        </p>
+        <p class="prose-zh">「不——！」他聽到恩不里居<span style="color:var(--c-anger);opacity:.8">發出尖嘯</span>，「不……你們不能……放開我，你們這些<span style="color:var(--c-fear);opacity:.7">動物</span>……不——！」</p>
+      </div>
+
+      <!-- DeepMoji 面板 S3 -->
+      <div class="deepmoji-panel">
+        <div class="dmp-emojis">😤&nbsp;🤢</div>
+        <div class="dmp-info">
+          <div class="dmp-label">DeepMoji · 第三幕 · 輕蔑（Contempt = 厭惡 × 憤怒）</div>
+          <div class="dmp-tags">
+            <span class="dmp-tag contempt">輕蔑（推導）</span>
+            <span class="dmp-tag disgust">厭惡 ↑峰值</span>
+            <span class="dmp-tag anger">憤怒</span>
+            <span class="dmp-tag fear">恐懼</span>
+          </div>
+          <div class="dmp-gross">Plutchik 輪：憤怒 + 厭惡 相鄰 → <span style="color:#f48fb1">輕蔑（contempt）融合</span> · 呼應恩不里居的種族偏見</div>
+        </div>
+        <div class="dmp-src">DeepMoji × NRC</div>
+      </div>
+
+      <div class="nrc-note">
+        <div class="nrc-note-head">NRC · 第三幕 · 厭惡–憤怒融合</div>
+        <div class="nrc-note-body">「filthy（骯髒的）」→ 厭惡；「screamed（尖叫）/ shriek（嘶吼）」→ 憤怒＋厭惡＋恐懼＋驚訝（NRC 四項並存）。Plutchik 情緒輪中憤怒與厭惡相鄰，融合為<strong>輕蔑（contempt）</strong>，與恩不里居對非人類種族態度高度吻合。</div>
+      </div>
+    </div><!-- /第三幕 -->
+
+    <!-- ═══ 第四幕 ═══ -->
+    <div class="scene-block s4" id="scene4">
+      <div class="scene-head">第四幕 · 憤怒釋放</div>
+      <div class="prose">
+        <p>
+          Not only had Harry managed to lose his wand but they were stuck in the middle of the Forbidden Forest with no means of transport whatsoever.
+          "Smart plan," he
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span></span>spat</span>
+          at Hermione, keen to release some of his
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>fury</span>.
+          "Really smart plan. Where do we go from here?"
+        </p>
+        <p class="prose-zh">哈利不僅丟失了魔杖，他們還困在禁忌森林深處，完全沒有任何交通工具。「妙計，」他<span style="color:var(--c-anger);opacity:.7">諷刺地</span>對赫敏說道，急於發洩心中的<span style="color:var(--c-anger);opacity:.8">怒火</span>，「真是妙計。我們現在該去哪裡？」</p>
+
+        <p>
+          "By the time we've done that, Sirius'll probably be dead!" said Harry, kicking a nearby tree in
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span></span>temper</span>;
+          there was a high-pitched chattering overhead as an angry bowtruckle flexed its long twiglike fingers at him.
+        </p>
+        <p class="prose-zh">「等我們做完這一切，天狼星大概已經死了！」哈利說著，<span style="color:var(--c-anger);opacity:.7">怒氣衝衝地</span>一腳踢向附近的樹幹；樹頂傳來尖細的嘰嘰聲，一隻憤怒的樹精伸出細長如樹枝的手指對他比劃著。</p>
+      </div>
+
+      <!-- DeepMoji 面板 S4 -->
+      <div class="deepmoji-panel">
+        <div class="dmp-emojis">💢&nbsp;😤</div>
+        <div class="dmp-info">
+          <div class="dmp-label">DeepMoji · 第四幕 · 情緒釋放（Expressive Release）</div>
+          <div class="dmp-tags">
+            <span class="dmp-tag anger">憤怒</span>
+            <span class="dmp-tag sadness">悲傷 ↑</span>
+            <span class="dmp-tag disgust">厭惡</span>
+          </div>
+          <div class="dmp-gross">Gross 模型：<span>表達抑制 → 外顯釋放</span> · 「fury（狂怒）」= 憤怒 + 恐懼 + 悲傷 三項並存</div>
+        </div>
+        <div class="dmp-src">DeepMoji × NRC</div>
+      </div>
+
+      <div class="nrc-note">
+        <div class="nrc-note-head">NRC · 第四幕 · 情緒釋放</div>
+        <div class="nrc-note-body">「fury（狂怒）」標記<strong>憤怒＋恐懼＋悲傷</strong>（NRC 三項）；「spat（諷刺地說）」→ 憤怒＋厭惡。哈利從第一幕的壓制到此刻的外顯發洩，完整呈現 Gross 情緒調節模型中<strong>表達抑制（expressive suppression）→ 釋放（release）</strong>的弧線。</div>
+      </div>
+    </div><!-- /第四幕 -->
+
+    <!-- ═══ 第五幕 ═══ -->
+    <div class="scene-block s5" id="scene5">
+      <div class="scene-head">第五幕 · 人馬的驕傲–憤怒</div>
+      <div class="prose">
+        <p>
+          "We do not help humans!"
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span></span>snarled</span>
+          the centaur holding Harry, tightening his grip and rearing a little at the same time.
+          "We are a race apart and
+          <span class="ew" data-e="multi"><span class="tip">期待 · 喜悅 · <span class="em-anger">信任</span></span>proud</span>
+          to be so. . . . We will not permit you to walk from here,
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span></span>boasting</span>
+          that we did your bidding!"
+        </p>
+        <p class="prose-zh">「我們不幫助人類！」握住哈利的那匹人馬<span style="color:var(--c-anger);opacity:.7">咆哮道</span>，同時收緊抓握、微微揚起身子。「我們是獨立的種族，並以此為<span style="color:#ffe082;opacity:.8">傲</span>……我們不允許你們這樣大搖大擺地離開，<span style="color:var(--c-disgust);opacity:.7">吹噓</span>說我們聽命於你們！」</p>
+
+        <p>
+          "We are not all like the
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>traitor</span>
+          Firenze, human girl!" shouted the gray centaur, to more neighing roars of approval from his fellows. "We are an ancient people who will not stand wizard
+          <span class="ew" data-e="anger"><span class="tip"><span class="em-anger">憤怒</span></span>invasions</span>
+          and
+          <span class="ew" data-e="multi"><span class="tip"><span class="em-anger">憤怒</span> · <span class="em-disgust">厭惡</span> · 悲傷 · 驚訝</span>insults</span>!"
+        </p>
+        <p class="prose-zh">「我們並非全都像<span style="color:var(--c-anger);opacity:.7">叛徒</span>費倫澤那樣，人類女孩！」那匹灰色人馬高聲喊道，身後同伴們發出陣陣嘶鳴叫好聲。「我們是一個古老的民族，絕不容忍巫師的<span style="color:var(--c-anger);opacity:.7">入侵</span>與<span style="color:var(--c-anger);opacity:.8">侮辱</span>！」</p>
+      </div>
+
+      <!-- DeepMoji 面板 S5 -->
+      <div class="deepmoji-panel">
+        <div class="dmp-emojis">😤&nbsp;🦁</div>
+        <div class="dmp-info">
+          <div class="dmp-label">DeepMoji · 第五幕 · 防衛性憤怒（Defensive Anger）</div>
+          <div class="dmp-tags">
+            <span class="dmp-tag pride">驕傲（喜悅+信任+期待）</span>
+            <span class="dmp-tag anger">憤怒</span>
+            <span class="dmp-tag disgust">厭惡</span>
+          </div>
+          <div class="dmp-gross">Plutchik 輪：<span>驕傲 + 憤怒 共存</span> → 防衛性憤怒 · 尊嚴受威脅時的典型語用模式</div>
+        </div>
+        <div class="dmp-src">DeepMoji × NRC</div>
+      </div>
+
+      <div class="nrc-note">
+        <div class="nrc-note-head">NRC · 第五幕 · 驕傲–憤怒複合</div>
+        <div class="nrc-note-body">「proud（驕傲）」標記期待＋喜悅＋信任（正向情緒組合），而「snarled（咆哮）」與「boasting（吹噓）」標記憤怒＋厭惡——展示 Plutchik 情緒輪中的情緒共存：驕傲與憤怒相鄰，形成<strong>防衛性憤怒（defensive anger）</strong>的典型語用模式。</div>
+      </div>
+    </div><!-- /第五幕 -->
+
+  </div><!-- /場景區 -->
+  <div style="height:40px"></div>
+</main><!-- /閱讀主區 -->
+
+<!-- ── 右側資訊欄 ── -->
+<aside class="sidebar">
+
+  <div class="s-sec">
+    <div class="s-head">主導情緒</div>
+    <div class="dom-card">
+      <div class="dom-name">Anger</div>
+      <div class="dom-name-zh">憤　怒</div>
+      <div class="dom-sub">NRC 情緒詞典 · Mohammad &amp; Turney 2013</div>
+      <div class="dom-desc">壓抑的憤怒貫穿全章，從哈利的內化克制到恩不里居的爆發式宣洩，再到哈利最終對赫敏的語言釋放。</div>
+    </div>
+  </div>
+
+  <div class="s-sec">
+    <div class="s-head">標示圖例</div>
+    <div class="legend">
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-anger)"></div><span style="color:#e57373">憤怒 Anger</span></div>
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-fear)"></div><span style="color:#ce93d8">恐懼 Fear</span></div>
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-disgust)"></div><span style="color:#b39ddb">厭惡 Disgust</span></div>
+      <div class="leg-row"><div class="leg-dot" style="background:var(--c-anticipation)"></div><span style="color:#ffb74d">複合情緒 Multi</span></div>
+    </div>
+  </div>
+
+  <div class="s-sec">
+    <div class="s-head">NRC 八大情緒分布 · 第三十三章</div>
+    <div class="emo-bars">
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name hi">憤怒 Anger</span><span class="emo-pct hi">68%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="68" style="background:var(--c-anger)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">恐懼 Fear</span><span class="emo-pct">62%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="62" style="background:var(--c-fear)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">厭惡 Disgust</span><span class="emo-pct">48%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="48" style="background:#6e2f8a"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">悲傷 Sadness</span><span class="emo-pct">32%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="32" style="background:var(--c-sadness)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">驚訝 Surprise</span><span class="emo-pct">28%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="28" style="background:#8e7444"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">期待 Anticipation</span><span class="emo-pct">22%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="22" style="background:var(--c-anticipation)"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">信任 Trust</span><span class="emo-pct">10%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="10" style="background:#2e7d52"></div></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-lbl"><span class="emo-name">喜悅 Joy</span><span class="emo-pct">8%</span></div>
+        <div class="emo-track"><div class="emo-fill" data-w="8" style="background:var(--c-joy)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="s-sec">
+    <div class="s-head">Plutchik 情緒輪 · 情緒映射</div>
+    <div class="wheel-wrap">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(100,100)">
+          <path d="M0,0 L-26,-76 A80,80 0 0,1 26,-76 Z" fill="#c0392b" opacity="0.92"/>
+          <path d="M0,0 L50,-63 A80,80 0 0,1 76,-26 Z" fill="#7d3c98" opacity="0.6"/>
+          <path d="M0,0 L76,-26 A80,80 0 0,1 76,26 Z" fill="#a0782a" opacity="0.45"/>
+          <path d="M0,0 L50,63 A80,80 0 0,1 26,76 Z" fill="#1e7e44" opacity="0.38"/>
+          <path d="M0,0 L26,76 A80,80 0 0,1 -26,76 Z" fill="#1a5c8a" opacity="0.32"/>
+          <path d="M0,0 L-50,63 A80,80 0 0,1 -76,26 Z" fill="#2e6da4" opacity="0.42"/>
+          <path d="M0,0 L-76,26 A80,80 0 0,1 -76,-26 Z" fill="#6e2f8a" opacity="0.6"/>
+          <path d="M0,0 L-50,-63 A80,80 0 0,1 -26,-76 Z" fill="#c87a1a" opacity="0.42"/>
+          <circle r="32" fill="#14121c" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <circle r="80" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <text x="0"   y="-45" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#f1948a" letter-spacing="0.03em">憤怒</text>
+          <text x="46"  y="-30" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#ce93d8">恐懼</text>
+          <text x="60"  y="6"   text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#c8a870">驚訝</text>
+          <text x="42"  y="44"  text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#66bb8a">信任</text>
+          <text x="0"   y="62"  text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#7eb0d4">喜悅</text>
+          <text x="-42" y="44"  text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#7eb0d4">悲傷</text>
+          <text x="-60" y="6"   text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#b39ddb">厭惡</text>
+          <text x="-42" y="-30" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#ffb74d">期待</text>
+          <line x1="-56" y1="-14" x2="-80" y2="-26" stroke="rgba(192,57,43,0.5)" stroke-width="1" stroke-dasharray="2,2"/>
+          <text x="-60" y="-32" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="5.5" fill="rgba(192,57,43,0.7)">輕蔑</text>
+          <text x="0" y="4" text-anchor="middle" font-family="'Cinzel',serif" font-size="8" fill="rgba(255,255,255,0.2)" letter-spacing="0.1em">NRC</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="s-sec" style="border-bottom:none">
+    <div class="s-head">關鍵情緒詞彙</div>
+    <div class="word-cloud">
+      <span class="wtag a">rage 狂怒</span>
+      <span class="wtag a">fury 怒火</span>
+      <span class="wtag a">roared 怒吼</span>
+      <span class="wtag a">invasion 入侵</span>
+      <span class="wtag a">traitor 叛徒</span>
+      <span class="wtag d">filthy 骯髒</span>
+      <span class="wtag d">snarled 咆哮</span>
+      <span class="wtag f">fright 驚恐</span>
+      <span class="wtag f">seize 扼住</span>
+      <span class="wtag m">insult 侮辱</span>
+      <span class="wtag m">screamed 尖叫</span>
+      <span class="wtag m">beasts 禽獸</span>
+    </div>
+    <div style="margin-top:10px; font-family:var(--mono); font-size:8px; color:var(--ink-ghost); line-height:1.7;">
+      來源：Mohammad &amp; Turney (2013)<br>
+      NRC 情緒詞彙關聯詞典<br>
+      DeepMoji：Felbo et al. (2017)<br>
+      原著：Rowling, J.K. (2003). HP &amp; OotP
+    </div>
+  </div>
+
+</aside>
+
+<!-- ── 底部狀態列 ── -->
+<footer class="statusbar">
+  <div><span class="pulse"></span>NRC 情緒分析進行中 · DeepMoji v3</div>
+  <div class="status-em">主導情緒：<span>憤怒 68%</span> · 恐懼 62% · 厭惡 48%</div>
+  <div>羅琳（2003）。哈利波特：鳳凰會的密令，第三十三章</div>
+</footer>
+
+</div><!-- /shell -->
+
+<script>
+  // ── 情緒詞高亮切換 ──
+  const hlBtn     = document.getElementById('hlBtn');
+  const proseRoot = document.getElementById('proseRoot');
+  let hlOn = false;
+  hlBtn.addEventListener('click', () => {
+    hlOn = !hlOn;
+    proseRoot.classList.toggle('hl-on', hlOn);
+    hlBtn.classList.toggle('on', hlOn);
+    hlBtn.textContent = hlOn ? '隱藏標示' : '標示情緒詞彙';
+  });
+
+  // ── 側欄情緒長條動畫 ──
+  document.querySelectorAll('.emo-fill[data-w]').forEach((el, i) => {
+    el.style.width = '0%';
+    setTimeout(() => { el.style.width = el.dataset.w + '%'; }, 500 + i * 90);
+  });
+
+  // ── 曲線節點點擊 → 捲動至對應場景 ──
+  function scrollToScene(n) {
+    const target = document.getElementById('scene' + n);
+    if (!target) return;
+    document.querySelectorAll('.scene-block').forEach(b => b.classList.remove('curve-active'));
+    target.classList.add('curve-active');
+    setTimeout(() => target.classList.remove('curve-active'), 2000);
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── 曲線節點懸停 → 場景亮度提升 ──
+  document.querySelectorAll('.scene-dot').forEach(dot => {
+    dot.addEventListener('mouseenter', () => {
+      const block = document.getElementById('scene' + dot.dataset.scene);
+      if (block) block.style.filter = 'brightness(1.15)';
+    });
+    dot.addEventListener('mouseleave', () => {
+      const block = document.getElementById('scene' + dot.dataset.scene);
+      if (block) block.style.filter = '';
+    });
+  });
+</script>
+</body>
+</html>
