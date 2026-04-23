@@ -5,6 +5,7 @@
   <title>蝴蝶效應 — Butterfly Effect</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"></script>
   <script src="lod.js"></script>
+  <script src="music.js"></script>
   <script src="sketch.js"></script>
   <style>
     html, body, canvas {
@@ -12,7 +13,38 @@
       overflow: hidden;
       background: #000;
     }
+
+    /* ── HUD ── */
+    #hud {
+      position: fixed;
+      bottom: 24px;
+      left: 28px;
+      font: 15px/2.0 'Courier New', monospace;
+      color: rgba(255, 255, 255, 0.38);
+      pointer-events: none;
+      user-select: none;
+      letter-spacing: 0.07em;
+    }
+    #hud-mode {
+      display: block;
+    }
+    #hud-mute {
+      display: none;
+      color: rgba(255, 180, 80, 0.65);
+    }
+    #hud-hint {
+      display: block;
+      margin-top: 1px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.18);
+    }
   </style>
 </head>
-<body></body>
+<body>
+  <div id="hud">
+    <span id="hud-mode"></span>
+    <span id="hud-mute">♪ MUTED</span>
+    <span id="hud-hint">click · drag · scroll · M = mute</span>
+  </div>
+</body>
 </html>
