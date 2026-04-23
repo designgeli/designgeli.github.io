@@ -130,7 +130,7 @@ vec3 force_gravity_well(vec3 p) {
   return f;
 }
 
-// Mode 5 — Wave Field: sinusoidal standing-wave force
+// Mode 5 — Ephemeral Glimpse: sinusoidal standing-wave force
 vec3 force_wave(vec3 p) {
   float wx = sin(p.z * 0.18 + u_time * 1.20) * 0.014;
   float wy = cos(p.x * 0.14 + u_time * 0.90) * 0.014;

@@ -32,7 +32,7 @@ const MODE_NAMES = [
   'Mode 2  Vortex 漩渦',
   'Mode 3  Pulse 脈衝',
   'Mode 4  Gravity Well 引力井',
-  'Mode 5  Wave Field 波場',
+  'Mode 5  Ephemeral Glimpse 轉瞬浮光',
 ];
 
 let musicStarted   = false;
