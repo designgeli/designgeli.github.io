@@ -295,6 +295,18 @@ section{ position:relative; }
 .legend-dot{ width:11px; height:11px; border-radius:50%; flex-shrink:0; }
 @media (max-width:860px){ .data-grid{ grid-template-columns:1fr; } .quad-wrap{ grid-template-columns:1fr; } }
 
+.trio-wrap{ margin:56px 0 28px; }
+.trio-wrap svg{ width:100%; height:auto; display:block; }
+.tagline-quote{
+  font-family:var(--font-serif); font-style:italic; font-size:18px; line-height:1.6;
+  color:var(--brand-deep); max-width:700px; margin:0 0 28px;
+}
+.talk-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 40px; margin-bottom:28px; }
+.talk-grid .tp-line{ font-size:13.5px; line-height:1.6; color:var(--ink-soft); margin:0; }
+.talk-grid .tp-line b{ color:var(--ink); }
+.data-footnote{ font-family:var(--font-mono); font-size:11px; line-height:1.7; color:var(--ink-soft); max-width:900px; }
+@media (max-width:700px){ .talk-grid{ grid-template-columns:1fr; } }
+
 /* ---------- benefits ---------- */
 .benefits-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:28px; }
 .benefit-card{ display:flex; flex-direction:column; gap:12px; padding:24px; border:1px solid var(--line); }
@@ -420,7 +432,7 @@ footer{
   <div class="wrap">
     <p class="eyebrow-label reveal">Core Technology</p>
     <h2 class="section-title reveal">Engineered for Precision, Built to Scale</h2>
-    <p class="section-lede reveal">Every AIXON solution is built around one foundation: a membrane with dual-calibrated, precision pore sizes — and a workflow that carries that precision from bench to production.</p>
+    <p class="section-lede reveal">Every AIXON solution is built around one foundation: a membrane with dual-calibrated, precision pore sizes. Benchmarked against four other isolation methods, AIXON delivers the most balanced performance in speed, purity, and impurity control.</p>
     <div class="tech-grid">
       <div class="tech-card reveal">
         <svg class="icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
@@ -522,52 +534,32 @@ footer{
 <section class="section section-light" id="data">
   <div class="wrap">
     <p class="eyebrow-label reveal">The Data-Driven Advantage</p>
-    <h2 class="section-title reveal">Benchmarked Against Ultracentrifugation</h2>
-    <p class="section-lede reveal">Real isolation-time and recovery data from internal R&amp;D studies, alongside a qualitative view of where AIXON sits in the broader isolation landscape.</p>
+    <h2 class="section-title reveal">Benchmarked Against Four Isolation Methods</h2>
+    <p class="section-lede reveal">Internal R&amp;D data comparing AIXON against ultracentrifugation and three anonymized commercial membrane products, all benchmarked on MDA-MB-231 conditioned-medium exosome isolation.</p>
 
     <div class="data-grid">
       <div class="data-card reveal">
         <div class="ml">Isolation Time</div>
-        <div class="bar-row a"><span class="n">AIXON Membrane</span><span class="tr"><span class="fl" style="--w:14%"></span></span><span class="v">4.4 min</span></div>
-        <div class="bar-row u"><span class="n">Ultracentrifugation</span><span class="tr"><span class="fl" style="--w:100%"></span></span><span class="v">Hours</span></div>
-        <div class="cap">Conventional ultracentrifugation protocols typically run 1–4+ hours per cycle.</div>
+        <div class="bar-row a"><span class="n">AIXON Membrane</span><span class="tr"><span class="fl" style="--w:7%"></span></span><span class="v">3 min</span></div>
+        <div class="bar-row u"><span class="n">Ultracentrifugation</span><span class="tr"><span class="fl" style="--w:100%"></span></span><span class="v">&gt;120 min</span></div>
+        <div class="cap">Conventional ultracentrifugation protocols typically run 2+ hours per cycle; AIXON completes isolation in minutes.</div>
       </div>
       <div class="data-card reveal">
-        <div class="ml">Exosome Recovery Rate</div>
-        <div class="bar-row a"><span class="n">AIXON Membrane</span><span class="tr"><span class="fl" style="--w:74%"></span></span><span class="v">7.54%</span></div>
-        <div class="bar-row u"><span class="n">Ultracentrifugation</span><span class="tr"><span class="fl" style="--w:52%"></span></span><span class="v">5.29%</span></div>
-        <div class="cap">Source: internal R&amp;D data, AIXON 47mm membrane isolation study (MDA-MB-231).</div>
+        <div class="ml">Relative Purity <span style="font-weight:400;">(vs. UC baseline)</span></div>
+        <div class="bar-row a"><span class="n">AIXON Membrane</span><span class="tr"><span class="fl" style="--w:94%"></span></span><span class="v">131%</span></div>
+        <div class="bar-row u"><span class="n">Ultracentrifugation</span><span class="tr"><span class="fl" style="--w:71%"></span></span><span class="v">100%</span></div>
+        <div class="cap">Highest relative purity of five isolation methods benchmarked. Source: internal R&amp;D data.</div>
       </div>
     </div>
 
-    <div class="quad-wrap">
-      <div class="reveal">
-        <svg viewBox="0 0 400 340" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono">
-  <line x1="215" y1="20" x2="215" y2="260" stroke="#D7E2EA" stroke-width="1" stroke-dasharray="2 3"/>
-  <line x1="50" y1="140" x2="380" y2="140" stroke="#D7E2EA" stroke-width="1" stroke-dasharray="2 3"/>
-  <line x1="50" y1="260" x2="380" y2="260" stroke="#4C6A80" stroke-width="1"/>
-  <path d="M375 256 L382 260 L375 264" fill="none" stroke="#4C6A80" stroke-width="1"/>
-  <line x1="50" y1="260" x2="50" y2="20" stroke="#4C6A80" stroke-width="1"/>
-  <path d="M46 25 L50 18 L54 25" fill="none" stroke="#4C6A80" stroke-width="1"/>
-  <text x="215" y="284" text-anchor="middle" font-size="10" fill="#4C6A80" letter-spacing="1">SCALABILITY / YIELD &#8594;</text>
-  <text x="-140" y="18" text-anchor="middle" font-size="10" fill="#4C6A80" letter-spacing="1" transform="rotate(-90)">PURITY / BIOACTIVITY &#8594;</text>
-  <circle cx="105" cy="215" r="7" fill="#B9C6CF" stroke="#FFFFFF" stroke-width="2"/>
-  <text x="105" y="234" text-anchor="middle" font-size="9.5" fill="#14293B">Ultracentrifugation</text>
-  <circle cx="168" cy="178" r="7" fill="#B9C6CF" stroke="#FFFFFF" stroke-width="2"/>
-  <text x="168" y="197" text-anchor="middle" font-size="9.5" fill="#14293B">Generic SEC /</text>
-  <text x="168" y="209" text-anchor="middle" font-size="9.5" fill="#14293B">Membrane Kits</text>
-  <circle cx="322" cy="58" r="9.5" fill="#1E5081" stroke="#FFFFFF" stroke-width="2.4"/>
-  <text x="322" y="42" text-anchor="middle" font-size="11" font-weight="600" fill="#0E2C46">AIXON</text>
-</svg>
-      </div>
-      <div class="quad-notes reveal">
-        <h4>Competitive Landscape</h4>
-        <p>Positioned against conventional isolation methods, AIXON's membrane technology combines high purity and bioactivity retention with straightforward scalability — a combination legacy methods and generic kits have struggled to deliver together. This chart reflects qualitative positioning, not a single controlled study.</p>
-        <div class="legend-row"><span class="legend-dot" style="background:var(--brand);"></span> AIXON Membrane / TFF</div>
-        <div class="legend-row"><span class="legend-dot" style="background:var(--grey-bar);"></span> Ultracentrifugation</div>
-        <div class="legend-row"><span class="legend-dot" style="background:var(--grey-bar);"></span> Generic SEC / Membrane Kits</div>
-      </div>
+    <div class="trio-wrap reveal">
+      <svg viewBox="0 0 1100 280" xmlns="http://www.w3.org/2000/svg"><svg x="0.0" y="0" width="342.7" height="280" viewBox="0 0 342.7 280"><text x="0" y="14" font-size="11" font-weight="600" letter-spacing="0.6" fill="#0E2C46">PROCESSING TIME</text><text x="0" y="26" font-size="8.5" fill="#8095A8">minutes — lower is better</text><text x="97.8" y="61.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Ultracentrifugation</text><rect x="102.8" y="47.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="47.9" width="158.5" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="61.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">&gt;120 min</text><text x="97.8" y="109.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">AIXON</text><rect x="102.8" y="95.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="95.9" width="11.3" height="20.2" fill="#1E5081" rx="1.5"/><text x="338.6666666666667" y="109.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">3 min</text><text x="97.8" y="157.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand D</text><rect x="102.8" y="143.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="143.9" width="11.3" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="157.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">3 min</text><text x="97.8" y="205.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand M</text><rect x="102.8" y="191.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="191.9" width="99.2" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="205.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">26.3 min</text><text x="97.8" y="253.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand S</text><rect x="102.8" y="239.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="239.9" width="147.2" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="253.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">39 min</text></svg><svg x="378.7" y="0" width="342.7" height="280" viewBox="0 0 342.7 280"><text x="0" y="14" font-size="11" font-weight="600" letter-spacing="0.6" fill="#0E2C46">PROTEIN IMPURITY</text><text x="0" y="26" font-size="8.5" fill="#8095A8">µg / 1E8 particles — lower is better</text><text x="97.8" y="61.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Ultracentrifugation</text><rect x="102.8" y="47.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="47.9" width="32.3" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="61.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">2.75µg</text><text x="97.8" y="109.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">AIXON</text><rect x="102.8" y="95.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="95.9" width="24.7" height="20.2" fill="#1E5081" rx="1.5"/><text x="338.6666666666667" y="109.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">2.1µg</text><text x="97.8" y="157.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand D</text><rect x="102.8" y="143.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="143.9" width="128.9" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="157.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">10.98µg</text><text x="97.8" y="205.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand M</text><rect x="102.8" y="191.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="191.9" width="38.2" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="205.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">3.25µg</text><text x="97.8" y="253.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand S</text><rect x="102.8" y="239.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="239.9" width="151.9" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="253.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">12.94µg</text></svg><svg x="757.3" y="0" width="342.7" height="280" viewBox="0 0 342.7 280"><text x="0" y="14" font-size="11" font-weight="600" letter-spacing="0.6" fill="#0E2C46">RELATIVE PURITY (vs UC)</text><text x="0" y="26" font-size="8.5" fill="#8095A8">% of UC baseline — higher is better</text><line x1="216.0" y1="30.0" x2="216.0" y2="274.0" stroke="#B9C6CF" stroke-width="1" stroke-dasharray="2 3"/><text x="97.8" y="61.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Ultracentrifugation</text><rect x="102.8" y="47.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="47.9" width="113.2" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="61.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">100%</text><text x="97.8" y="109.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">AIXON</text><rect x="102.8" y="95.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="95.9" width="148.3" height="20.2" fill="#1E5081" rx="1.5"/><text x="338.6666666666667" y="109.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">131%</text><text x="97.8" y="157.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand D</text><rect x="102.8" y="143.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="143.9" width="28.3" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="157.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">25%</text><text x="97.8" y="205.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand M</text><rect x="102.8" y="191.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="191.9" width="96.2" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="205.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">85%</text><text x="97.8" y="253.0" text-anchor="end" font-size="9" fill="#14293B" font-family="IBM Plex Sans">Brand S</text><rect x="102.8" y="239.9" width="158.5" height="20.2" fill="#EAF0F4"/><rect x="102.8" y="239.9" width="23.8" height="20.2" fill="#B9C6CF" rx="1.5"/><text x="338.6666666666667" y="253.0" text-anchor="end" font-size="8.6" font-weight="600" fill="#14293B">21%</text></svg></svg>
     </div>
+    <p class="tagline-quote reveal">"AIXON delivers the most balanced performance in speed, purity, and impurity control — efficiency and quality without compromise."</p>
+    <div class="talk-grid">
+      <p class="tp-line"><b>AIXON:</b> Most balanced performance across speed, purity, and impurity control — efficiency and quality without compromise.</p><p class="tp-line"><b>Ultracentrifugation:</b> The industry baseline for stability, but slow — often exceeding 120 minutes per cycle.</p><p class="tp-line"><b>Brand S:</b> Highest raw particle and RNA recovery, but at the lowest purity — suited to non-precision applications only.</p><p class="tp-line"><b>Brand D:</b> Fast and RNA-rich, but purity drops to roughly a quarter of the UC baseline.</p><p class="tp-line"><b>Brand M:</b> Moderate speed with higher recovery, though purity trails slightly behind the UC baseline.</p>
+    </div>
+    <p class="data-footnote">Study design: MDA-MB-231 conditioned-medium exosome isolation, internal R&amp;D data. AIXON figures reflect the AIXON 47mm membrane with backing support layer. Relative purity indexed to the ultracentrifugation baseline at 100%. Brand D / Brand M / Brand S denote anonymized commercial membrane products benchmarked in the same study. AIXON's raw particle recovery rate (8.72%) trails Brand M and Brand S, which recover more total particles at substantially lower purity — a deliberate trade-off in favor of purity and speed.</p>
   </div>
 </section>
 
